@@ -1,0 +1,6 @@
+streamlit==1.45.1
+Pillow==11.2.1
+numpy==2.2.6
+rembg==2.0.65
+onnxruntime==1.22.0
+google-generativeai==0.8.5
