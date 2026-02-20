@@ -6,6 +6,8 @@ import os
 import json
 import math
 import tempfile
+import html
+import base64
 from scipy import ndimage
 
 try:
@@ -45,6 +47,8 @@ if "cached_mask_key" not in st.session_state:
     st.session_state.cached_mask_key = None
 if "cached_original" not in st.session_state:
     st.session_state.cached_original = None
+if "font_uploader_key" not in st.session_state:
+    st.session_state.font_uploader_key = 0
 
 # ── Font Cache ──
 _font_cache = {}
@@ -78,7 +82,7 @@ def parse_txt_file(content):
             current_name = stripped.replace("=== LISTA:", "").replace("===", "").strip()
             current_content = []
 
-        elif stripped == "=== POEMA ===":
+        elif stripped == "=== POEMA:":
             if current_section == "lista" and current_name:
                 lists[current_name] = current_content
             elif current_section == "poema" and current_content:
@@ -529,6 +533,138 @@ def clean_text_for_rendering(text):
     cleaned = re.sub(r'\s+', ' ', cleaned)
     
     return cleaned.strip()
+
+
+def add_title_and_author(image, svg_string,
+                         title_text="", author_text="",
+                         title_font_size=48, author_font_size=24,
+                         title_position="top-center", author_position="bottom-right",
+                         title_color="#000000", author_color="#000000",
+                         custom_font_path=None):
+    """
+    Draws a title and an author signature on top of the finished calligram.
+    Title is ALWAYS rendered visually above the author when they share the
+    same edge (top or bottom), regardless of corner.
+    """
+    title = title_text.strip()
+    author = author_text.strip()
+
+    if not title and not author:
+        return image, svg_string
+
+    output = image.copy()
+    draw = ImageDraw.Draw(output)
+
+    img_w, img_h = output.size
+    margin = int(min(img_w, img_h) * 0.005)
+
+    # ──────────────────────────────────────────────────────────
+    # VERTICAL GAP between title and author when on the same edge.
+    # Change this value to increase or decrease the separation.
+    # ──────────────────────────────────────────────────────────
+    title_author_gap = margin  # ← MODIFY THIS for more/less separation
+
+    svg_additions = []
+
+    def hex_to_rgba(hex_color):
+        return (
+            int(hex_color[1:3], 16),
+            int(hex_color[3:5], 16),
+            int(hex_color[5:7], 16),
+            255
+        )
+
+    def measure_text(text_str, font):
+        try:
+            bbox = font.getbbox(text_str)
+            return bbox[2] - bbox[0], bbox[3] - bbox[1]
+        except Exception:
+            return int(font.size * len(text_str) * 0.6), int(font.size * 1.2)
+
+    def compute_xy(position, text_w, text_h, vertical_offset=0):
+        if "center" in position:
+            x = (img_w - text_w) // 2
+        elif "left" in position:
+            x = margin
+        else:
+            x = img_w - text_w - margin
+
+        if "top" in position:
+            y = margin + vertical_offset
+        else:
+            y = img_h - text_h - margin - vertical_offset
+
+        return x, y
+
+    def same_edge(pos_a, pos_b):
+        return ("top" in pos_a) == ("top" in pos_b)
+
+    # ── Measure both elements first ──
+    title_font = author_font = None
+    tc = ac = None
+    tw = th = aw = ah = 0
+
+    if title:
+        title_font = get_default_font(title_font_size, custom_font_path)
+        tc = hex_to_rgba(title_color)
+        tw, th = measure_text(title, title_font)
+
+    if author:
+        author_font = get_default_font(author_font_size, custom_font_path)
+        ac = hex_to_rgba(author_color)
+        aw, ah = measure_text(author, author_font)
+
+    # ── Determine shared-edge situation ──
+    shared_edge = title and author and same_edge(title_position, author_position)
+    on_bottom = shared_edge and "bottom" in title_position
+
+    # ── Draw Title ──
+    if title:
+        title_offset = 0
+        if shared_edge and on_bottom:
+            # Bottom edge: push TITLE up so it sits above the author
+            title_offset = ah + title_author_gap
+        
+        tx, ty = compute_xy(title_position, tw, th, vertical_offset=title_offset)
+        draw.text((tx, ty), title, fill=tc, font=title_font)
+
+        escaped = html.escape(title)
+        svg_additions.append(
+            f'<text x="{tx}" y="{ty + title_font_size}" '
+            f'font-size="{title_font_size}" '
+            f'fill="rgb({tc[0]},{tc[1]},{tc[2]})" '
+            f'font-family="Noto Sans, sans-serif">'
+            f'{escaped}</text>'
+        )
+
+    # ── Draw Author ──
+    if author:
+        author_offset = 0
+        if shared_edge and not on_bottom:
+            # Top edge: push AUTHOR down so it sits below the title
+            author_offset = th + title_author_gap
+
+        ax, ay = compute_xy(author_position, aw, ah, vertical_offset=author_offset)
+        draw.text((ax, ay), author, fill=ac, font=author_font)
+
+        escaped = html.escape(author)
+        svg_additions.append(
+            f'<text x="{ax}" y="{ay + author_font_size}" '
+            f'font-size="{author_font_size}" '
+            f'fill="rgb({ac[0]},{ac[1]},{ac[2]})" '
+            f'font-family="Noto Sans, sans-serif">'
+            f'{escaped}</text>'
+        )
+
+    # ── Inject into SVG ──
+    if svg_additions and svg_string:
+        closing_tag = "</svg>"
+        additions_str = "\n".join(f"  {elem}" for elem in svg_additions)
+        svg_string = svg_string.replace(
+            closing_tag, f"{additions_str}\n{closing_tag}"
+        )
+
+    return output, svg_string
 
 
 # ═══════════════════════════════════════════
@@ -1199,7 +1335,7 @@ with st.sidebar:
     st.subheader("Fuente de Texto")
     text_source = st.radio(
         "¿De dónde viene el texto?",
-        ["Escribir directamente", "Subir archivo TXT", "Ordenar con Gemini"],
+        ["Escribir directamente", "Subir archivo TXT", "Ordenar con IA"],
         index=0,
         label_visibility="collapsed"
     )
@@ -1220,7 +1356,7 @@ with st.sidebar:
         uploaded_txt = st.file_uploader(
             "Sube tu archivo TXT:",
             type=["txt"],
-            help="Formato: === LISTA: Nombre === y === POEMA ==="
+            help="Formato: === LISTA: Nombre === y === POEMA: Título ==="
         )
         if uploaded_txt is not None:
             content = uploaded_txt.read().decode("utf-8")
@@ -1253,11 +1389,11 @@ with st.sidebar:
                     st.session_state.text_source = "file_list"
                     selected_list_name = name
 
-    elif text_source == "Ordenar con Gemini":
+    elif text_source == "Ordenar con IA":
             st.session_state.text_source = "gemini"
             
             api_key = st.text_input(
-                "Clave API de Gemini:",
+                "Clave API de Google AI Studio:",
                 type="password",
                 help="Tu clave personal de Google AI Studio."
             )
@@ -1274,7 +1410,7 @@ with st.sidebar:
                         "gemini-3pro-preview",       # El más inteligente, pero límite estricto
                         "gemma-3-27b-it"             # Open weights, límite generoso
                     ],
-                    help="Si tienes errores de límite (Quota), usa Gemma o Flash Latest."
+                    help="Si tienes errores de límite (quota) o recibes una respuesta en blanco, usa Gemma."
                 )
                 
             with col_temp:
@@ -1398,22 +1534,33 @@ with st.sidebar:
     
     # ── Font Settings ──
     st.subheader("Tipografía")
+
+    # -- Modo Figura font (shared font slot) --
     uploaded_font = st.file_uploader(
         "Subir fuente personalizada (.ttf):",
         type=["ttf"],
-        help="Opcional. Se usa Noto Sans por defecto."
+        help="Opcional. Se usa Noto Sans por defecto.",
+        key=f"font_uploader_{st.session_state.font_uploader_key}"
     )
-    # FIX: Save uploaded font to temp file so rendering can use it
+
     if uploaded_font is not None:
         font_bytes = uploaded_font.read()
         temp_font_path = os.path.join(tempfile.gettempdir(), "xquendart_custom_font.ttf")
         with open(temp_font_path, "wb") as f:
             f.write(font_bytes)
         st.session_state.custom_font_path = temp_font_path
-        _font_cache.clear()  # Flush cache when font changes
+        _font_cache.clear()
         st.success("✅ Fuente personalizada cargada")
-    # Note: if no font uploaded, we keep whatever was in session_state
-    # (could be a previously uploaded font or None)
+
+    if st.session_state.custom_font_path is not None:
+        st.caption("🔤 Fuente activa: **personalizada**")
+        if st.button("🔄 Restablecer a Noto Sans", use_container_width=True):
+            st.session_state.custom_font_path = None
+            st.session_state.font_uploader_key += 1
+            _font_cache.clear()
+            st.rerun()
+    else:
+        st.caption("🔤 Fuente activa: **Noto Sans** (predeterminada)")
 
     st.divider()
 
@@ -1614,6 +1761,89 @@ if st.session_state.mode == "figura":
                 bg_image_data = Image.open(bg_image_file)
                 st.image(bg_image_data, caption="Vista previa del fondo", use_container_width=True)
 
+        # ── Title & Author Signature ──
+        st.markdown("---")
+        with st.expander("📝 Título y firma del autor", expanded=False):
+
+            # Shared position options (same 6 for both)
+            position_labels = [
+                "Arriba (centrado)",
+                "Abajo (centrado)",
+                "Superior izquierda",
+                "Superior derecha",
+                "Inferior izquierda",
+                "Inferior derecha",
+            ]
+
+            title_text_input = st.text_input(
+                "Título del caligrama:",
+                value="",
+                placeholder="Ej: Xquenda",
+                help="Acepta cualquier carácter, idioma o símbolo."
+            )
+
+            col_tp, col_ts = st.columns(2)
+            with col_tp:
+                title_position_label = st.selectbox(
+                    "Posición del título:",
+                    position_labels,
+                    index=0,
+                    key="title_pos_select"
+                )
+            with col_ts:
+                title_font_size = st.slider(
+                    "Tamaño del título:",
+                    min_value=12, max_value=120, value=48,
+                    key="title_fs"
+                )
+
+            title_color = st.color_picker(
+                "Color del título:",
+                text_color,
+                key="title_color_picker"
+            )
+
+            st.markdown("---")
+
+            author_text_input = st.text_input(
+                "Firma / Nombre del autor:",
+                value="",
+                placeholder="Ej: Juan Pérez - @nombredeusuario - sitioweb",
+                help="Sin restricciones de caracteres."
+            )
+
+            col_ac, col_as = st.columns(2)
+            with col_ac:
+                author_position_label = st.selectbox(
+                    "Posición de la firma:",
+                    position_labels,
+                    index=5,   # default: Inferior derecha
+                    key="author_pos_select"
+                )
+            with col_as:
+                author_font_size = st.slider(
+                    "Tamaño de la firma:",
+                    min_value=8, max_value=80, value=24,
+                    key="author_fs"
+                )
+
+            author_color = st.color_picker(
+                "Color de la firma:",
+                text_color,
+                key="author_color_picker"
+            )
+
+        # Label → internal value mapping (shared by both)
+        position_map = {
+            "Arriba (centrado)":    "top-center",
+            "Abajo (centrado)":     "bottom-center",
+            "Superior izquierda":   "top-left",
+            "Superior derecha":     "top-right",
+            "Inferior izquierda":   "bottom-left",
+            "Inferior derecha":     "bottom-right",
+        }
+
+        
     # ── Generate ──
     st.divider()
 
@@ -1649,6 +1879,21 @@ if st.session_state.mode == "figura":
 
             with st.spinner("🎨 Generando caligrama..."):
                 result_image, svg_string = fill_shape_with_text(mask, render_text, config)
+
+                # ── Add title and author signature on top ──
+                result_image, svg_string = add_title_and_author(
+                    result_image, svg_string,
+                    title_text=title_text_input,
+                    author_text=author_text_input,
+                    title_font_size=title_font_size,
+                    author_font_size=author_font_size,
+                    title_position=position_map.get(title_position_label, "top-center"),
+                    author_position=position_map.get(author_position_label, "bottom-right"),
+                    title_color=title_color,
+                    author_color=author_color,
+                    custom_font_path=st.session_state.custom_font_path,
+                )
+
                 st.session_state.generated_image = result_image
                 st.session_state.generated_svg = svg_string
                 st.session_state.last_render_mode = render_mode
