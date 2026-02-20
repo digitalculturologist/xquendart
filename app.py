@@ -60,6 +60,10 @@ _font_cache = {}
 def parse_txt_file(content):
     """
     Parses the poet's TXT file into word lists and poems.
+    Poems are stored as dicts: {"title": str, "content": str}
+    Supports both:
+        === POEMA: Título ===
+        === POEMA:
     """
     lists = {}
     poems = []
@@ -69,27 +73,34 @@ def parse_txt_file(content):
     current_name = None
     current_content = []
 
+    def save_current():
+        """Saves whatever section we were building."""
+        nonlocal current_section, current_name, current_content
+        if current_section == "lista" and current_name:
+            lists[current_name] = current_content
+        elif current_section == "poema" and current_content:
+            poems.append({
+                "title": current_name or "",
+                "content": "\n".join(current_content)
+            })
+
     for line in lines:
         stripped = line.strip()
 
+        # ── List header: === LISTA: Name === ──
         if stripped.startswith("=== LISTA:") and stripped.endswith("==="):
-            if current_section == "lista" and current_name:
-                lists[current_name] = current_content
-            elif current_section == "poema" and current_content:
-                poems.append("\n".join(current_content))
-
+            save_current()
             current_section = "lista"
             current_name = stripped.replace("=== LISTA:", "").replace("===", "").strip()
             current_content = []
 
-        elif stripped == "=== POEMA:":
-            if current_section == "lista" and current_name:
-                lists[current_name] = current_content
-            elif current_section == "poema" and current_content:
-                poems.append("\n".join(current_content))
-
+        # ── Poem header: === POEMA: Title === OR === POEMA: ──
+        elif stripped.startswith("=== POEMA:"):
+            save_current()
             current_section = "poema"
-            current_name = None
+            # Extract title (works with or without closing ===)
+            title_part = stripped.replace("=== POEMA:", "").replace("===", "").strip()
+            current_name = title_part if title_part else None
             current_content = []
 
         elif stripped and current_section:
@@ -104,10 +115,8 @@ def parse_txt_file(content):
             elif current_section == "poema":
                 current_content.append(stripped)
 
-    if current_section == "lista" and current_name:
-        lists[current_name] = current_content
-    elif current_section == "poema" and current_content:
-        poems.append("\n".join(current_content))
+    # Save the last section
+    save_current()
 
     return lists, poems
 
@@ -302,7 +311,7 @@ def get_text_for_rendering(parsed_lists, parsed_poems, text_source,
     elif text_source == "file_poem" and parsed_poems:
         idx = selected_poem_idx if selected_poem_idx is not None else 0
         if idx < len(parsed_poems):
-            raw_text = parsed_poems[idx]
+            raw_text = parsed_poems[idx]["content"]
     elif text_source == "file_list" and parsed_lists and selected_list:
         if selected_list in parsed_lists:
             words = [item["word"] for item in parsed_lists[selected_list]]
@@ -1372,8 +1381,14 @@ with st.sidebar:
             source_options = []
             if parsed_poems:
                 for i, poem in enumerate(parsed_poems):
-                    preview = poem[:50] + "..." if len(poem) > 50 else poem
-                    source_options.append(f"Poema {i+1}: {preview}")
+                    title = poem.get("title", "")
+                    if title:
+                        source_options.append(f"Poema {i+1}: {title}")
+                    else:
+                        preview = poem["content"][:50]
+                        if len(poem["content"]) > 50:
+                            preview += "..."
+                        source_options.append(f"Poema {i+1}: {preview}")            
             if parsed_lists:
                 for name in parsed_lists:
                     source_options.append(f"Lista: {name}")
