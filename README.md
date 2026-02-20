@@ -299,12 +299,12 @@ palabra4
 palabra5 | traducción5
 palabra6 | traducción6
 
-=== POEMA:
+=== POEMA: Título del poema ===
 verso uno del poema
 verso dos del poema
 verso tres del poema
 
-=== POEMA:
+=== POEMA: Otro título de otro poema ===
 primer verso del segundo poema
 segundo verso
 tercer verso
@@ -313,7 +313,7 @@ tercer verso
 ### Reglas
 
 - **Listas:** Comienzan con `=== LISTA: NombreDeLaLista ===`. Cada línea contiene una palabra, opcionalmente seguida de `|` y su traducción al español.
-- **Poemas:** Comienzan con `=== POEMA:`. Cada línea posterior es un verso del poema.
+- **Poemas:** Comienzan con `=== POEMA: TituloDelPoema ===`. Cada línea posterior es un verso del poema.
 - Las líneas vacías dentro de una sección se ignoran.
 - La traducción es opcional. Si no la incluyes, simplemente escribe la palabra sola.
 - Puedes mezclar listas y poemas en cualquier orden.
@@ -341,11 +341,10 @@ kaan | cielo
 lu'um | tierra
 ja' | lluvia
 
-=== POEMA:
-xochitl atl tonatiuh
-ehecatl metztli citlalli
-tlalli quiahuitl
-ilhuicatl cuauhtli xochitl
+=== POEMA: Xon Ahuiyacan ===
+Ica xon ahuiyacan ihuinti xochitli, tomac mani, aya.
+Ma on te ya aquiloto xochicozquitl.
+In toquiappancaxochiuh, tla celia xochitli,cueponia xochitli.
 ```
 
 ---
