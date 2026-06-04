@@ -1,0 +1,36 @@
+name: Warm XquendArt Space
+
+on:
+  schedule:
+    # Runs daily at 15:17 UTC, which is 08:17 in Tijuana during daylight saving time.
+    - cron: "17 15 * * *"
+  workflow_dispatch:
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Visit XquendArt on Hugging Face Spaces
+        env:
+          SPACE_URL: https://digitalculturologist-xquendart.hf.space
+        run: |
+          set -euo pipefail
+
+          echo "Warming $SPACE_URL"
+          curl --location --fail --show-error --silent \
+            --retry 3 \
+            --retry-delay 30 \
+            --connect-timeout 20 \
+            --max-time 180 \
+            "$SPACE_URL/?warmup=github-actions"
+
+          echo "Checking Streamlit health endpoint"
+          curl --location --fail --show-error --silent \
+            --retry 2 \
+            --retry-delay 15 \
+            --connect-timeout 20 \
+            --max-time 120 \
+            "$SPACE_URL/_stcore/health"
+
+          echo "XquendArt Space responded successfully."
