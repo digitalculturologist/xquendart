@@ -1,3 +1,17 @@
+---
+title: XquendArt
+emoji: 🌸
+colorFrom: purple
+colorTo: pink
+sdk: docker
+app_port: 8501
+pinned: false
+license: mit
+short_description: Generador de caligramas para poetas indígenas
+---
+
+
+
 
 
 # 🌸 XquendArt
@@ -363,12 +377,12 @@ La función **"Ordenar con IA"** usa la API de Google AI Studio para tomar una l
 
 | Modelo | Velocidad | Límite diario aprox. | Mejor para |
 |---|---|---|---|
-| `gemini-flash-latest` | ⚡ Rápido | ~20 generaciones/día | Uso general, buena calidad |
-| `gemini-3-flash-preview` | ⚡⚡ Muy rápido | ~20 generaciones/día | Textos largos |
-| `gemini-3pro-preview` | 🧠 Más inteligente | ~20 generaciones/día | Resultados de mayor calidad |
-| `gemma-3-27b-it` | ⚡ Rápido | ~14,400 generaciones/día | Uso intensivo, sin límite práctico |
+| `gemini-flash-latest` | ⚡ Rápido | 5 RPM, 250K TPM, 20 RPD | Uso general, buena calidad |
+| `gemini-3.1-flash-lite` | ⚡⚡ Ligero | 15 RPM, 250K TPM, 500 RPD | Pruebas e iteración frecuente |
+| `gemini-3.5-flash` | ⚡⚡ Rápido | 5 RPM, 250K TPM, 20 RPD | Textos largos |
+| `gemma-4-31b-it` | ⚡ Rápido | 15 RPM, sin límite TPM, 1.5K RPD | Uso intensivo |
 
-> **💡 Consejo:** Si necesitas hacer muchas pruebas, usa **Gemma** — tiene un límite diario mucho más generoso.
+> **💡 Consejo:** Si necesitas hacer muchas pruebas, usa **gemini-3.1-flash-lite** o **Gemma** — tienen límites diarios más generosos.
 
 ### Estilos de ordenamiento
 

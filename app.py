@@ -8,6 +8,7 @@ import math
 import tempfile
 import html
 import base64
+import streamlit.components.v1 as components
 from scipy import ndimage
 
 try:
@@ -27,8 +28,12 @@ st.set_page_config(
 # ─── Session State Initialization ───
 if "mode" not in st.session_state:
     st.session_state.mode = "figura"
+if "mode_selector" not in st.session_state:
+    st.session_state.mode_selector = "Modo Figura"
 if "text_source" not in st.session_state:
     st.session_state.text_source = "direct"
+if "direct_text_value" not in st.session_state:
+    st.session_state.direct_text_value = ""
 if "parsed_lists" not in st.session_state:
     st.session_state.parsed_lists = {}
 if "parsed_poems" not in st.session_state:
@@ -39,6 +44,10 @@ if "generated_svg" not in st.session_state:
     st.session_state.generated_svg = None
 if "custom_font_path" not in st.session_state:  # NEW
     st.session_state.custom_font_path = None
+if "custom_font_bytes" not in st.session_state:
+    st.session_state.custom_font_bytes = None
+if "custom_font_name" not in st.session_state:
+    st.session_state.custom_font_name = None
 if "gemini_result" not in st.session_state:
     st.session_state.gemini_result = None
 if "cached_mask" not in st.session_state:
@@ -49,9 +58,136 @@ if "cached_original" not in st.session_state:
     st.session_state.cached_original = None
 if "font_uploader_key" not in st.session_state:
     st.session_state.font_uploader_key = 0
+if "query_mode_loaded" not in st.session_state:
+    st.session_state.query_mode_loaded = False
+if "query_text_loaded" not in st.session_state:
+    st.session_state.query_text_loaded = False
+
+if not st.session_state.query_mode_loaded:
+    query_mode = st.query_params.get("mode")
+    if query_mode in ("figura", "lienzo"):
+        st.session_state.mode = query_mode
+        st.session_state.mode_selector = "Modo Figura" if query_mode == "figura" else "Modo Lienzo"
+    st.session_state.query_mode_loaded = True
+
+if not st.session_state.query_text_loaded:
+    query_text = st.query_params.get("text")
+    if query_text:
+        st.session_state.direct_text_value = query_text
+    st.session_state.query_text_loaded = True
 
 # ── Font Cache ──
 _font_cache = {}
+APP_DIR = os.path.dirname(__file__)
+
+AI_MODEL_OPTIONS = [
+    "gemini-flash-latest",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemma-4-31b-it",
+]
+AI_MODEL_LIMITS = {
+    "gemini-flash-latest": {
+        "description": "Rápido y balanceado",
+        "rpm": "5 RPM",
+        "tpm": "250K TPM",
+        "rpd": "20 RPD",
+    },
+    "gemini-3.1-flash-lite": {
+        "description": "Más margen diario para iterar",
+        "rpm": "15 RPM",
+        "tpm": "250K TPM",
+        "rpd": "500 RPD",
+    },
+    "gemini-3.5-flash": {
+        "description": "Flash más reciente para textos largos",
+        "rpm": "5 RPM",
+        "tpm": "250K TPM",
+        "rpd": "20 RPD",
+    },
+    "gemma-4-31b-it": {
+        "description": "Open weights con límite diario amplio",
+        "rpm": "15 RPM",
+        "tpm": "sin límite TPM",
+        "rpd": "1.5K RPD",
+    },
+}
+AI_MODEL_ALIASES = {
+    "gemini-3-flash-preview": "gemini-3.5-flash",
+    "gemma-3-27b-it": "gemma-4-31b-it",
+}
+
+
+def sync_mode_from_selector():
+    selected_mode = (
+        "figura"
+        if st.session_state.mode_selector == "Modo Figura"
+        else "lienzo"
+    )
+    st.session_state.mode = selected_mode
+    if st.query_params.get("mode") != selected_mode:
+        st.query_params["mode"] = selected_mode
+
+
+def resolve_font_path(path):
+    return path if os.path.isabs(path) else os.path.join(APP_DIR, path)
+
+
+def detect_text_script(text):
+    has_hiragana_katakana = False
+    has_hangul = False
+    has_cjk_ideograph = False
+    for char in text or "":
+        code = ord(char)
+        if 0x3040 <= code <= 0x30FF or 0x31F0 <= code <= 0x31FF:
+            has_hiragana_katakana = True
+        elif 0xAC00 <= code <= 0xD7AF or 0x1100 <= code <= 0x11FF:
+            has_hangul = True
+        elif (
+            0x3400 <= code <= 0x4DBF
+            or 0x4E00 <= code <= 0x9FFF
+            or 0x20000 <= code <= 0x2A6DF
+            or 0x2A700 <= code <= 0x2B73F
+            or 0x2B740 <= code <= 0x2B81F
+            or 0x2B820 <= code <= 0x2CEAF
+        ):
+            has_cjk_ideograph = True
+    if has_hiragana_katakana:
+        return "jp"
+    if has_hangul:
+        return "kr"
+    if has_cjk_ideograph:
+        return "cjk"
+    return None
+
+
+def get_font_paths_for_script(script=None):
+    cjk_paths = {
+        "jp": [
+            "/usr/share/opentype/noto/NotoSansCJK-Regular.ttc",
+            "C:/Windows/Fonts/meiryo.ttc",
+            "C:/Windows/Fonts/YuGothR.ttc",
+            "C:/Windows/Fonts/msgothic.ttc",
+        ],
+        "kr": [
+            "/usr/share/opentype/noto/NotoSansCJK-Regular.ttc",
+            "C:/Windows/Fonts/malgun.ttf",
+        ],
+        "cjk": [
+            "/usr/share/opentype/noto/NotoSansCJK-Regular.ttc",
+            "C:/Windows/Fonts/msyh.ttc",
+            "C:/Windows/Fonts/simsun.ttc",
+            "C:/Windows/Fonts/meiryo.ttc",
+        ],
+    }
+    default_paths = [
+        "assets/NotoSans-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "C:/Windows/Fonts/NotoSans-Regular.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+    ]
+    return cjk_paths.get(script, []) + default_paths
 
 # ═══════════════════════════════════════════
 # UTILITY FUNCTIONS
@@ -121,9 +257,9 @@ def parse_txt_file(content):
     return lists, poems
 
 
-def get_default_font(size=20, custom_font_path=None):
+def get_default_font(size=20, custom_font_path=None, script=None):
     """Returns a font object with caching to avoid repeated disk reads."""
-    cache_key = (size, custom_font_path)
+    cache_key = (size, custom_font_path, script)
     if cache_key in _font_cache:
         return _font_cache[cache_key]
 
@@ -138,11 +274,9 @@ def get_default_font(size=20, custom_font_path=None):
 
     # Try bundled Noto Sans
     if font is None:
-        font_paths = [
-            "assets/NotoSans-Regular.ttf",
-            "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
-        ]
+        font_paths = get_font_paths_for_script(script)
         for path in font_paths:
+            path = resolve_font_path(path)
             if os.path.exists(path):
                 try:
                     font = ImageFont.truetype(path, size)
@@ -302,7 +436,8 @@ def prepare_background_image(bg_image, output_width, output_height, display_mode
 
 
 def get_text_for_rendering(parsed_lists, parsed_poems, text_source,
-                           direct_text="", selected_list=None, selected_poem_idx=None):
+                           direct_text="", selected_list=None, selected_poem_idx=None,
+                           preserve_edge_spaces=False):
     """Returns the final text string to be rendered, cleaned of punctuation."""
     raw_text = ""
     
@@ -322,7 +457,7 @@ def get_text_for_rendering(parsed_lists, parsed_poems, text_source,
     
     # Clean punctuation for rendering (the poet sees formatted text,
     # but the calligram only uses the words)
-    return clean_text_for_rendering(raw_text)
+    return clean_text_for_rendering(raw_text, preserve_edge_spaces=preserve_edge_spaces)
 
 
 def arrange_with_gemini(word_list, style, api_key, output_format="Poema", language="", model_name="gemini-flash-latest", temperature=1.0):
@@ -331,6 +466,7 @@ def arrange_with_gemini(word_list, style, api_key, output_format="Poema", langua
     Now supports dynamic model selection and temperature control.
     """
     import random
+    model_name = AI_MODEL_ALIASES.get(model_name, model_name)
     
     if style == "Aleatorio":
         words_only = [item["word"] for item in word_list]
@@ -431,6 +567,40 @@ REGLAS IMPORTANTES:
 Palabras disponibles: {words_only_list}
 Tu respuesta:"""
 
+    if "gemma" in model_name.lower():
+        gemma_words = "\n".join(f"- {item['word']}" for item in word_list)
+        gemma_meanings = "\n".join(
+            f"- {item['word']}: {item['translation']}" for item in word_list
+            if item.get("translation")
+        )
+        gemma_format = (
+            "Use short poem lines. You may separate stanzas with blank lines."
+            if output_format == "Poema"
+            else "Use one or two short poetic prose sentences."
+        )
+        prompt = f"""Create the final {output_format.lower()} for a visual poem.
+
+Allowed output words, exact spelling:
+{gemma_words}
+
+Meaning hints for planning only. Never output these hints:
+{gemma_meanings or "(none)"}
+
+Poetic direction:
+{instruction}
+
+Output contract:
+- Output ONLY the final {output_format.lower()}.
+- Every word in the output MUST be copied exactly from the allowed output words.
+- Use each allowed word at least once.
+- You may repeat allowed words.
+- Allowed punctuation: comma, period, semicolon, apostrophe, ellipsis.
+- Do not write role, task, constraints, analysis, checks, titles, bullets, Markdown, labels, translations, or explanations.
+
+{gemma_format}
+
+Final {output_format.lower()} only:"""
+
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
@@ -445,42 +615,206 @@ Tu respuesta:"""
         # Instanciar el modelo seleccionado por el usuario
         model = genai.GenerativeModel(model_name)
         
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
+        def generate_text(active_prompt, active_temperature):
+            response = model.generate_content(
+                active_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=active_temperature,
+                    max_output_tokens=max_tokens,
+                )
             )
-        )
+            return response.text.strip()
+
+        result_text = generate_text(prompt, temperature)
         
-        result_text = response.text.strip()
-        
-        # --- VALIDACIÓN (Idéntica a la versión corregida anterior) ---
+        # --- VALIDACION ---
         def normalize_word(w):
-            w = w.lower().strip()
+            w = str(w).lower().strip()
             w = w.replace('\u2019', "'").replace('\u2018', "'").replace('\u02BC', "'")
             w = w.replace('\u2013', '-').replace('\u2014', '-')
             return w
-        
-        valid_words = {normalize_word(item["word"]) for item in word_list}
-        
+
         import re
-        # Quitamos puntuación gramatical, dejamos apóstrofos y guiones
-        check_text = re.sub(r'[.,;:!?¡¿""«»()$$$${}/\\—–…\n]', ' ', result_text)
-        result_words = check_text.split()
-        
-        matching = 0
-        for w in result_words:
-            w_norm = normalize_word(w)
-            # Chequeo directo o limpieza de puntuación pegada
-            if w_norm in valid_words:
-                matching += 1
-            else:
-                w_cleaned = re.sub(r"^['\"-]+|['\"-]+$", "", w_norm)
-                if w_cleaned in valid_words:
-                    matching += 1
-        
-        total_check = len(result_words) if result_words else 1
+        valid_lookup = {}
+        base_word_sequence = []
+        for item in word_list:
+            canonical = str(item.get("word", "")).strip()
+            if canonical:
+                base_word_sequence.append(canonical)
+                valid_lookup.setdefault(normalize_word(canonical), canonical)
+        valid_words = set(valid_lookup)
+        punctuation_pattern = "[.,;:!?\\u00a1\\u00bf\\\"\\u00ab\\u00bb()\\[\\]{}$/\\\\\\u2014\\u2013\\u2026\\u3001\\u3002\\n\\r\\t]"
+
+        def split_candidate_words(text):
+            check_text = re.sub(punctuation_pattern, " ", text or "")
+            return check_text.split()
+
+        def canonicalize_candidate_word(word):
+            w_norm = normalize_word(word)
+            if w_norm in valid_lookup:
+                return valid_lookup[w_norm]
+            w_cleaned = re.sub(r"^[`'\"-]+|[`'\"-]+$", "", w_norm)
+            if w_cleaned in valid_lookup:
+                return valid_lookup[w_cleaned]
+            return None
+
+        def candidate_sequence(text):
+            sequence = []
+            invalid = []
+            for candidate in split_candidate_words(text):
+                canonical = canonicalize_candidate_word(candidate)
+                if canonical:
+                    sequence.append(canonical)
+                else:
+                    invalid.append(candidate)
+            return sequence, invalid
+
+        def evaluate_candidate(text):
+            sequence, invalid = candidate_sequence(text)
+            total = len(sequence) + len(invalid)
+            return len(sequence), total if total else 1
+
+        def extract_valid_sequence(*texts):
+            sequence = []
+            for text in texts:
+                clean_block = extract_clean_output_sequence(text)
+                if clean_block:
+                    sequence.extend(clean_block)
+            return sequence
+
+        def ensure_each_word_once(words):
+            sequence = list(words)
+            seen = {normalize_word(word) for word in sequence}
+            for word in base_word_sequence:
+                word_key = normalize_word(word)
+                if word_key not in seen:
+                    sequence.append(word)
+                    seen.add(word_key)
+            return sequence
+
+        def local_fallback_sequence():
+            words = list(base_word_sequence)
+            if not words:
+                return []
+            if style == "Contraste":
+                contrasted = []
+                left = 0
+                right = len(words) - 1
+                while left <= right:
+                    contrasted.append(words[left])
+                    if left != right:
+                        contrasted.append(words[right])
+                    left += 1
+                    right -= 1
+                return contrasted
+            if style == "Repetición poética" and len(words) > 1:
+                return [words[0]] + words + [words[0], words[-1]]
+            return words
+
+        def format_safe_sequence(words):
+            words = [word for word in words if word]
+            if not words:
+                return ""
+            if output_format == "Poema":
+                words_per_line = max(2, min(4, max(2, len(words) // 4)))
+                lines = []
+                for i in range(0, len(words), words_per_line):
+                    lines.append(" ".join(words[i:i + words_per_line]))
+                if len(lines) > 4:
+                    midpoint = len(lines) // 2
+                    return "\n".join(lines[:midpoint] + [""] + lines[midpoint:])
+                return "\n".join(lines)
+            words_per_sentence = max(4, min(8, max(4, len(words) // 2)))
+            sentences = []
+            for i in range(0, len(words), words_per_sentence):
+                sentences.append(" ".join(words[i:i + words_per_sentence]) + ".")
+            return " ".join(sentences)
+
+        def contains_all_required_words(words):
+            seen = {normalize_word(word) for word in words}
+            return all(normalize_word(word) in seen for word in base_word_sequence)
+
+        def dedupe_repeated_sequence(words):
+            if len(words) >= 4 and len(words) % 2 == 0:
+                midpoint = len(words) // 2
+                if words[:midpoint] == words[midpoint:]:
+                    return words[:midpoint]
+            return words
+
+        def line_is_clean_output(line):
+            stripped = line.strip()
+            if not stripped:
+                return False
+            if any(marker in stripped for marker in ("*", "`", "#", "[", "]", "<", ">", "=")):
+                return False
+            sequence, invalid = candidate_sequence(stripped)
+            return bool(sequence) and not invalid
+
+        def extract_clean_output_sequence(text):
+            blocks = []
+            current = []
+            for raw_line in str(text or "").splitlines():
+                line = raw_line.strip()
+                if not line:
+                    if current and current[-1] != "":
+                        current.append("")
+                    continue
+                if line_is_clean_output(line):
+                    current.append(line)
+                elif current:
+                    blocks.append(current)
+                    current = []
+            if current:
+                blocks.append(current)
+
+            candidates = []
+            for block in blocks:
+                while block and block[-1] == "":
+                    block.pop()
+                if not block:
+                    continue
+                sequence, invalid = candidate_sequence("\n".join(block))
+                if sequence and not invalid:
+                    candidates.append(sequence)
+
+            if not candidates:
+                sequence, invalid = candidate_sequence(text)
+                if sequence and not invalid:
+                    return dedupe_repeated_sequence(sequence)
+                return []
+
+            complete = [seq for seq in candidates if contains_all_required_words(seq)]
+            chosen = complete[-1] if complete else candidates[-1]
+            return dedupe_repeated_sequence(chosen)
+
+        def safe_gemma_output(*texts):
+            for text in texts:
+                clean_sequence = extract_clean_output_sequence(text)
+                if clean_sequence and contains_all_required_words(clean_sequence):
+                    return format_safe_sequence(dedupe_repeated_sequence(clean_sequence))
+
+            extracted = extract_valid_sequence(*texts)
+            if extracted:
+                return format_safe_sequence(ensure_each_word_once(dedupe_repeated_sequence(extracted)))
+            return format_safe_sequence(local_fallback_sequence())
+
+        matching, total_check = evaluate_candidate(result_text)
+
+        if "gemma" in model_name.lower():
+            clean_result = extract_clean_output_sequence(result_text)
+            if clean_result and contains_all_required_words(clean_result):
+                return format_safe_sequence(clean_result), None
+
+            strict_retry_prompt = prompt + f"""
+
+RETRY: Your previous answer used words outside the allowed list.
+Write again using ONLY these exact words: {words_only_list}.
+Return only final poem/prose lines. No analysis, bullets, labels, checks, or Markdown."""
+            retry_text = generate_text(strict_retry_prompt, min(temperature, 0.7))
+            clean_retry = extract_clean_output_sequence(retry_text)
+            if clean_retry and contains_all_required_words(clean_retry):
+                return format_safe_sequence(clean_retry), None
+            return safe_gemma_output(retry_text, result_text), None
         
         # Si la coincidencia es muy baja, lanzamos advertencia pero devolvemos lo que hay
         if matching < total_check * 0.3:
@@ -495,7 +829,7 @@ Tu respuesta:"""
         return None, f"❌ Error ({model_name}): {str(e)}"
 
 
-def clean_text_for_rendering(text):
+def clean_text_for_rendering(text, preserve_edge_spaces=False):
     """
     Removes punctuation and formatting from text before rendering.
     Preserves special characters used in indigenous Mexican languages:
@@ -507,9 +841,10 @@ def clean_text_for_rendering(text):
     - All accented, nasalized, and special Unicode letters (á, ñ, ü, ã, ǎ, etc.)
     """
     import re
+    original_text = text or ""
     
     # Step 1: Normalize line breaks to spaces
-    cleaned = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+    cleaned = original_text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
 
     # Step 1.5: Normalize apostrophe and dash variants
     # (so indigenous words with glottal stops are consistent)
@@ -540,8 +875,85 @@ def clean_text_for_rendering(text):
     
     # Step 6: Collapse multiple spaces
     cleaned = re.sub(r'\s+', ' ', cleaned)
-    
-    return cleaned.strip()
+    cleaned = cleaned.strip()
+
+    if preserve_edge_spaces and cleaned:
+        if original_text[:1].isspace():
+            cleaned = " " + cleaned
+        if original_text[-1:].isspace():
+            cleaned = cleaned + " "
+
+    return cleaned
+
+
+def make_lienzo_text_sources(parsed_lists, parsed_poems, current_text):
+    """Builds up to ten selectable text sources for the browser canvas."""
+    sources = []
+    seen = set()
+
+    def add_source(label, value):
+        cleaned = clean_text_for_rendering(value or "", preserve_edge_spaces=(label == "Texto actual"))
+        if not cleaned.strip():
+            return
+        key = (label, cleaned)
+        if key in seen:
+            return
+        seen.add(key)
+        sources.append({"label": label, "text": cleaned})
+
+    add_source("Texto actual", current_text)
+
+    for i, poem in enumerate(parsed_poems or []):
+        title = poem.get("title") or f"Poema {i + 1}"
+        add_source(f"Poema: {title}", poem.get("content", ""))
+
+    for name, items in (parsed_lists or {}).items():
+        words = " ".join(item.get("word", "") for item in items)
+        add_source(f"Lista: {name}", words)
+
+    while len(sources) < 10 and sources:
+        sources.append({"label": f"Texto {len(sources) + 1}", "text": sources[0]["text"]})
+
+    return sources[:10]
+
+
+def get_lienzo_font_payload(text=""):
+    """Returns font metadata for the browser canvas."""
+    custom_bytes = st.session_state.get("custom_font_bytes")
+    if custom_bytes:
+        return {
+            "family": "XquendArtCanvasFont",
+            "data": base64.b64encode(custom_bytes).decode("ascii"),
+            "stack": '"XquendArtCanvasFont", "Noto Sans", "Noto Sans CJK JP", Arial, sans-serif',
+        }
+
+    script = detect_text_script(text)
+    font_path = None
+    for candidate in get_font_paths_for_script(script):
+        resolved = resolve_font_path(candidate)
+        if os.path.exists(resolved):
+            font_path = resolved
+            break
+
+    stack = '"Noto Sans", "Noto Sans CJK JP", "Noto Sans CJK KR", "Noto Sans CJK SC", "Yu Gothic", "Meiryo", "Malgun Gothic", "Microsoft YaHei", Arial, sans-serif'
+    if font_path and os.path.getsize(font_path) <= 2_500_000:
+        with open(font_path, "rb") as font_file:
+            return {
+                "family": "XquendArtCanvasFont",
+                "data": base64.b64encode(font_file.read()).decode("ascii"),
+                "stack": f'"XquendArtCanvasFont", {stack}',
+            }
+
+    return {"family": "XquendArtCanvasFont", "data": None, "stack": stack}
+
+
+def build_lienzo_canvas_html(config):
+    """Builds the self-contained HTML/JS word-painting canvas."""
+    template_path = os.path.join(APP_DIR, "assets", "lienzo_canvas_template.html")
+    with open(template_path, "r", encoding="utf-8") as template_file:
+        template = template_file.read()
+    config_json = json.dumps(config, ensure_ascii=False).replace("</", "<\\/")
+    return template.replace("__XQUENDART_CONFIG__", config_json)
 
 
 def add_title_and_author(image, svg_string,
@@ -642,7 +1054,7 @@ def add_title_and_author(image, svg_string,
             f'<text x="{tx}" y="{ty + title_font_size}" '
             f'font-size="{title_font_size}" '
             f'fill="rgb({tc[0]},{tc[1]},{tc[2]})" '
-            f'font-family="Noto Sans, sans-serif">'
+            f'font-family="Noto Sans, Noto Sans CJK JP, Noto Sans CJK KR, Noto Sans CJK SC, sans-serif">'
             f'{escaped}</text>'
         )
 
@@ -661,7 +1073,7 @@ def add_title_and_author(image, svg_string,
             f'<text x="{ax}" y="{ay + author_font_size}" '
             f'font-size="{author_font_size}" '
             f'fill="rgb({ac[0]},{ac[1]},{ac[2]})" '
-            f'font-family="Noto Sans, sans-serif">'
+            f'font-family="Noto Sans, Noto Sans CJK JP, Noto Sans CJK KR, Noto Sans CJK SC, sans-serif">'
             f'{escaped}</text>'
         )
 
@@ -699,6 +1111,7 @@ def fill_shape_with_text(mask, text, config):
     output_width = config.get("output_width", 2000)
     output_height = config.get("output_height", 2000)
     custom_font_path = config.get("custom_font_path", None)
+    text_script = detect_text_script(text)
 
     ABSOLUTE_MIN_FONT = 4
     BACKGROUND_THRESHOLD = 253  # pixels > this are background
@@ -746,7 +1159,7 @@ def fill_shape_with_text(mask, text, config):
             f'<text x="{x}" y="{y + font_size}" '
             f'font-size="{font_size}" '
             f'fill="rgb({tc_r},{tc_g},{tc_b})" '
-            f'font-family="Noto Sans, sans-serif">'
+            f'font-family="Noto Sans, Noto Sans CJK JP, Noto Sans CJK KR, Noto Sans CJK SC, sans-serif">'
             f'{word_text}</text>'
         )
 
@@ -891,7 +1304,7 @@ def fill_shape_with_text(mask, text, config):
             fs = ideal_fs
 
             while fs >= ABSOLUTE_MIN_FONT:
-                font = get_default_font(fs, custom_font_path)
+                font = get_default_font(fs, custom_font_path, text_script)
                 try:
                     bbox = font.getbbox(word)
                     w_w = bbox[2] - bbox[0]
@@ -918,7 +1331,7 @@ def fill_shape_with_text(mask, text, config):
             # force-place at minimum size to avoid blank spots
             if not placed:
                 fs = ABSOLUTE_MIN_FONT
-                font = get_default_font(fs, custom_font_path)
+                font = get_default_font(fs, custom_font_path, text_script)
                 try:
                     bbox = font.getbbox(word)
                     w_w = bbox[2] - bbox[0]
@@ -950,7 +1363,7 @@ def fill_shape_with_text(mask, text, config):
 
                 word = words[word_index % len(words)]
                 fs = ABSOLUTE_MIN_FONT
-                font = get_default_font(fs, custom_font_path)
+                font = get_default_font(fs, custom_font_path, text_script)
 
                 try:
                     bbox = font.getbbox(word)
@@ -1078,7 +1491,7 @@ def fill_shape_with_text(mask, text, config):
                         word = words[temp_word_idx % len(words)]
 
                         fs = get_font_size_scanline(mode, row_height_base)
-                        font = get_default_font(fs, custom_font_path)
+                        font = get_default_font(fs, custom_font_path, text_script)
 
                         try:
                             bbox = font.getbbox(word)
@@ -1091,7 +1504,7 @@ def fill_shape_with_text(mask, text, config):
 
                         if temp_x + w_width > seg_width and not layout_words:
                             fs = max(ABSOLUTE_MIN_FONT, int(fs * seg_width / max(w_width, 1)))
-                            font = get_default_font(fs, custom_font_path)
+                            font = get_default_font(fs, custom_font_path, text_script)
                             try:
                                 bbox = font.getbbox(word)
                                 w_width = bbox[2] - bbox[0]
@@ -1131,7 +1544,7 @@ def fill_shape_with_text(mask, text, config):
                         render_x = seg_end - start_offset
                         for lw in layout_words:
                             render_x -= lw["width"]
-                            font = get_default_font(lw["font_size"], custom_font_path)
+                            font = get_default_font(lw["font_size"], custom_font_path, text_script)
                             draw_y = y + (row_height_base - lw["font_size"]) / 2
                             draw.text((render_x, draw_y), lw["word"], fill=text_fill, font=font)
                             add_svg(render_x, draw_y, lw["font_size"], lw["word"])
@@ -1139,7 +1552,7 @@ def fill_shape_with_text(mask, text, config):
                     else:
                         render_x = seg_start + start_offset
                         for lw in layout_words:
-                            font = get_default_font(lw["font_size"], custom_font_path)
+                            font = get_default_font(lw["font_size"], custom_font_path, text_script)
                             draw_y = y + (row_height_base - lw["font_size"]) / 2
                             draw.text((render_x, draw_y), lw["word"], fill=text_fill, font=font)
                             add_svg(render_x, draw_y, lw["font_size"], lw["word"])
@@ -1209,7 +1622,7 @@ def fill_shape_with_text(mask, text, config):
                         word = words[temp_word_idx % len(words)]
 
                         fs = get_font_size_scanline(mode, col_width_base)
-                        font = get_default_font(fs, custom_font_path)
+                        font = get_default_font(fs, custom_font_path, text_script)
 
                         try:
                             bbox = font.getbbox(word)
@@ -1222,7 +1635,7 @@ def fill_shape_with_text(mask, text, config):
                         if w_width > col_width_base * 0.95:
                             fs_try = int(fs * (col_width_base * 0.90) / max(w_width, 1))
                             fs_try = max(ABSOLUTE_MIN_FONT, fs_try)
-                            font = get_default_font(fs_try, custom_font_path)
+                            font = get_default_font(fs_try, custom_font_path, text_script)
                             try:
                                 bbox = font.getbbox(word)
                                 w_width = bbox[2] - bbox[0]
@@ -1241,7 +1654,7 @@ def fill_shape_with_text(mask, text, config):
 
                         if temp_y + w_height > seg_height and not layout_words:
                             fs = ABSOLUTE_MIN_FONT
-                            font = get_default_font(fs, custom_font_path)
+                            font = get_default_font(fs, custom_font_path, text_script)
                             try:
                                 bbox = font.getbbox(word)
                                 w_width = bbox[2] - bbox[0]
@@ -1286,7 +1699,7 @@ def fill_shape_with_text(mask, text, config):
                         render_y = seg_bottom - start_offset
                         for lw in layout_words:
                             render_y -= lw["height"]
-                            font = get_default_font(lw["font_size"], custom_font_path)
+                            font = get_default_font(lw["font_size"], custom_font_path, text_script)
                             draw_x = x + (col_width_base - lw["width"]) / 2
                             draw.text((draw_x, render_y), lw["word"], fill=text_fill, font=font)
                             add_svg(draw_x, render_y, lw["font_size"], lw["word"])
@@ -1294,7 +1707,7 @@ def fill_shape_with_text(mask, text, config):
                     else:
                         render_y = seg_top + start_offset
                         for lw in layout_words:
-                            font = get_default_font(lw["font_size"], custom_font_path)
+                            font = get_default_font(lw["font_size"], custom_font_path, text_script)
                             draw_x = x + (col_width_base - lw["width"]) / 2
                             draw.text((draw_x, render_y), lw["word"], fill=text_fill, font=font)
                             add_svg(draw_x, render_y, lw["font_size"], lw["word"])
@@ -1330,13 +1743,14 @@ with st.sidebar:
 
     # ── Mode Selection ──
     st.subheader("Modo")
-    mode = st.radio(
+    st.radio(
         "Selecciona el modo:",
         ["Modo Figura", "Modo Lienzo"],
-        index=0,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="mode_selector",
+        on_change=sync_mode_from_selector,
     )
-    st.session_state.mode = "figura" if mode == "Modo Figura" else "lienzo"
+    sync_mode_from_selector()
 
     st.divider()
 
@@ -1358,7 +1772,8 @@ with st.sidebar:
         direct_text = st.text_area(
             "Escribe o pega tu texto:",
             height=150,
-            placeholder="Escribe aquí las palabras o el poema..."
+            placeholder="Escribe aquí las palabras o el poema...",
+            key="direct_text_value"
         )
 
     elif text_source == "Subir archivo TXT":
@@ -1416,16 +1831,10 @@ with st.sidebar:
             col_model, col_temp = st.columns([2, 1])
             
             with col_model:
-                # SELECTOR DE MODELO (Tus opciones de 2026)
                 gemini_model = st.selectbox(
                     "Modelo de IA:",
-                    [
-                        "gemini-flash-latest",       # Rápido, balanceado, default
-                        "gemini-3-flash-preview",    # Muy rápido, ventana enorme
-                        "gemini-3pro-preview",       # El más inteligente, pero límite estricto
-                        "gemma-3-27b-it"             # Open weights, límite generoso
-                    ],
-                    help="Si tienes errores de límite (quota) o recibes una respuesta en blanco, usa Gemma."
+                    AI_MODEL_OPTIONS,
+                    help="Si tienes errores de límite (quota), prueba gemini-3.1-flash-lite o Gemma."
                 )
                 
             with col_temp:
@@ -1439,12 +1848,13 @@ with st.sidebar:
                     help="0.0: Predecible/Repetitivo. 2.0: Caótico/Original."
                 )
                 
-            if "gemma" in gemini_model:
-                st.caption("ℹ️ **Gemma:** Límite alto (¡14,400 generaciones X día!). Si el texto es el mismo siempre, sube la creatividad > 1.2")
-            elif "flash" in gemini_model:
-                st.caption("⚠️ **Gemini 3 Flash:** Límite alto (20 generaciones X día). Úsalo con moderación.")
-            elif "gemini" in gemini_model:
-                st.caption("⚠️ **Gemini 3 Pro:** Límite estricto (20 generaciones X día). Úsalo con moderación.")
+            model_limits = AI_MODEL_LIMITS.get(gemini_model, {})
+            st.caption(
+                f"ℹ️ **{gemini_model}:** {model_limits.get('description', 'Modelo disponible')}. "
+                f"Límites gratuitos: {model_limits.get('rpm', 'RPM no especificado')}, "
+                f"{model_limits.get('tpm', 'TPM no especificado')}, "
+                f"{model_limits.get('rpd', 'RPD no especificado')}."
+            )
     
             poet_language = st.text_input(
                 "Lengua indígena:",
@@ -1564,6 +1974,8 @@ with st.sidebar:
         with open(temp_font_path, "wb") as f:
             f.write(font_bytes)
         st.session_state.custom_font_path = temp_font_path
+        st.session_state.custom_font_bytes = font_bytes
+        st.session_state.custom_font_name = uploaded_font.name
         _font_cache.clear()
         st.success("✅ Fuente personalizada cargada")
 
@@ -1571,6 +1983,8 @@ with st.sidebar:
         st.caption("🔤 Fuente activa: **personalizada**")
         if st.button("🔄 Restablecer a Noto Sans", use_container_width=True):
             st.session_state.custom_font_path = None
+            st.session_state.custom_font_bytes = None
+            st.session_state.custom_font_name = None
             st.session_state.font_uploader_key += 1
             _font_cache.clear()
             st.rerun()
@@ -1954,23 +2368,37 @@ elif st.session_state.mode == "lienzo":
     st.header("🎨 Modo Lienzo")
     st.markdown("Dibuja libremente y tus trazos se convertirán en palabras.")
 
-    st.info(
-        "🚧 **Modo Lienzo en desarrollo.** "
-        "Esta función estará disponible en la próxima actualización. "
-        "Por ahora, usa el Modo Figura para generar caligramas."
+    render_text = get_text_for_rendering(
+        st.session_state.parsed_lists,
+        st.session_state.parsed_poems,
+        st.session_state.text_source,
+        direct_text=direct_text,
+        selected_list=selected_list_name,
+        selected_poem_idx=selected_poem_idx,
+        preserve_edge_spaces=True,
+    )
+    text_sources = make_lienzo_text_sources(
+        st.session_state.parsed_lists,
+        st.session_state.parsed_poems,
+        render_text
     )
 
-    st.markdown(
-        """
-        ### Próximamente:
-        - 🖌️ Lienzo interactivo para dibujar con palabras en tiempo real
-        - 🔄 Cambio de listas de palabras mientras dibujas
-        - 📏 Tamaño de fuente ajustable (manual o por velocidad del cursor)
-        - ↩️ Deshacer trazos
-        - 📥 Exportar como PNG y SVG
-        """
-    )
-
+    if not text_sources:
+        st.info("👈 Escribe, carga o genera texto en la barra lateral para comenzar.")
+    else:
+        lienzo_config = {
+            "width": int(output_width),
+            "height": int(output_height),
+            "textSources": text_sources,
+            "font": get_lienzo_font_payload(render_text),
+        }
+        aspect = output_height / max(output_width, 1)
+        component_height = min(1120, max(720, int(820 * aspect) + 260))
+        components.html(
+            build_lienzo_canvas_html(lienzo_config),
+            height=component_height,
+            scrolling=True
+        )
 
 # ═══════════════════════════════════════════
 # FOOTER

@@ -1,0 +1,1954 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+    body {
+      margin: 0;
+      overflow: hidden;
+      color: #202124;
+      background: #ffffff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .xq-shell {
+      border: 1px solid #d8dde6;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+    .xq-toolbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+    .xq-control label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 4px;
+      color: #5f6368;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    select,
+    input[type="number"],
+    input[type="color"],
+    input[type="file"],
+    button {
+      width: 100%;
+      min-height: 34px;
+      border: 1px solid #c9ced6;
+      border-radius: 6px;
+      background: #fff;
+      color: #202124;
+      font: inherit;
+    }
+    select,
+    input[type="number"],
+    input[type="file"] {
+      padding: 6px 8px;
+    }
+    input[type="file"] {
+      font-size: 12px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      border: 1px solid #c9ced6;
+      border-radius: 6px;
+      padding: 8px;
+      background: #ffffff;
+      color: #202124;
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #8b2fbf;
+    }
+    input[type="color"] {
+      padding: 3px;
+    }
+    button {
+      cursor: pointer;
+      padding: 0 10px;
+      font-weight: 600;
+    }
+    button:hover { background: #f5f6f8; }
+    .xq-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .xq-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 10px;
+      color: #3c4043;
+      font-size: 13px;
+    }
+    .xq-checks label {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      margin: 0;
+    }
+    .xq-canvas-wrap {
+      margin-top: 12px;
+      border: 1px solid #c9ced6;
+      border-radius: 8px;
+      overflow: auto;
+      background-color: #fafafa;
+      background-image:
+        linear-gradient(45deg, #e6e8ec 25%, transparent 25%),
+        linear-gradient(-45deg, #e6e8ec 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e6e8ec 75%),
+        linear-gradient(-45deg, transparent 75%, #e6e8ec 75%);
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-size: 16px 16px;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 680px;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .xq-status {
+      margin-top: 8px;
+      min-height: 20px;
+      color: #5f6368;
+      font-size: 12px;
+    }
+    .xq-primary {
+      border-color: #7a2ead;
+      background: #7a2ead;
+      color: #fff;
+    }
+    .xq-primary:hover { background: #6b279b; }
+    .xq-shell {
+      height: 100vh;
+      min-height: 640px;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .xq-appbar {
+      min-height: 54px;
+      display: grid;
+      grid-template-columns: minmax(150px, 230px) 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: #24323c;
+      color: #f8fbff;
+    }
+    .xq-brand {
+      font-weight: 800;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .xq-ribbon {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      min-width: 0;
+    }
+    .xq-tool-button,
+    .xq-icon-button {
+      width: auto;
+      min-width: 34px;
+      min-height: 32px;
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.1);
+      color: #f8fbff;
+      border-radius: 6px;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+    .xq-tool-button:hover,
+    .xq-icon-button:hover {
+      background: rgba(255,255,255,.18);
+    }
+    .xq-tool-button.is-active {
+      background: #ffffff;
+      color: #24323c;
+      border-color: #ffffff;
+    }
+    .xq-workbench {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 286px minmax(0, 1fr);
+      min-height: 0;
+      overflow: hidden;
+      background: #edf1f5;
+    }
+    .xq-panel {
+      border-right: 1px solid #d1d8e0;
+      background: #f9fafc;
+      padding: 12px;
+      overflow: auto;
+    }
+    .xq-panel-section {
+      padding: 10px 0;
+      border-bottom: 1px solid #e2e6ec;
+    }
+    .xq-panel-section:first-child {
+      padding-top: 0;
+    }
+    .xq-panel-title {
+      margin: 0 0 8px;
+      color: #52616e;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    summary.xq-panel-title {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      user-select: none;
+    }
+    summary.xq-panel-title::-webkit-details-marker {
+      display: none;
+    }
+    summary.xq-panel-title::after {
+      content: "▾";
+      color: #7d8790;
+      font-size: 11px;
+      transition: transform .16s ease;
+    }
+    details:not([open]) > summary.xq-panel-title {
+      margin-bottom: 0;
+    }
+    details:not([open]) > summary.xq-panel-title::after {
+      transform: rotate(-90deg);
+    }
+    .xq-compact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .xq-text-slots {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .xq-slot-button {
+      min-width: 0;
+      min-height: 30px;
+      padding: 0 4px;
+      font-size: 12px;
+      border-color: #cdd4dd;
+      background: #ffffff;
+      color: #2c3943;
+    }
+    .xq-slot-button.is-active {
+      background: #1f7a8c;
+      border-color: #1f7a8c;
+      color: #ffffff;
+    }
+    .xq-color-palette {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      margin: 0 0 8px;
+    }
+    .xq-swatch {
+      min-width: 0;
+      width: 100%;
+      aspect-ratio: 1;
+      min-height: 0;
+      padding: 0;
+      border-radius: 6px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #b9c2cf;
+    }
+    .xq-swatch.is-active {
+      box-shadow: 0 0 0 2px #24323c;
+    }
+    .xq-stage {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: 12px;
+      gap: 10px;
+      overflow: hidden;
+    }
+    .xq-stagebar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      color: #42515d;
+      font-size: 12px;
+    }
+    .xq-zoom-controls {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .xq-zoom-controls button {
+      width: 34px;
+      padding: 0;
+    }
+    .xq-zoom-controls span {
+      min-width: 52px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .xq-canvas-wrap {
+      height: 100%;
+      min-height: 0;
+      max-height: none;
+      margin-top: 0;
+      display: block;
+      padding: 18px;
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+    .xq-canvas-inner {
+      width: max-content;
+      height: max-content;
+      min-width: 100%;
+      min-height: 100%;
+      display: grid;
+      place-items: start center;
+    }
+    canvas {
+      width: auto;
+      max-width: none;
+      max-height: none;
+      background: #ffffff;
+      box-shadow: 0 14px 34px rgba(25, 37, 49, .16);
+      transform-origin: top center;
+      outline: none;
+    }
+    .xq-shell[data-tool="draw"] canvas {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%2324323c' d='M15.4 3.6 20.4 8.6 10 19 5 14z'/%3E%3Cpath fill='%23ffffff' stroke='%2324323c' stroke-width='1.5' d='M4 21c2.7-.1 4.5-1.5 4.3-4.2L4.6 13.9C5.1 17.3 3 17.7 3 21z'/%3E%3C/svg%3E") 4 20, crosshair;
+    }
+    .xq-shell[data-tool="fill"] canvas {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%2324323c' d='M8.7 2.8 17.9 12l-6.8 6.8L1.9 9.6z'/%3E%3Cpath fill='%23ffffff' d='M5.1 9.6 11 15.5 15.5 12 8.7 5.2z'/%3E%3Cpath fill='%231f7a8c' d='M18.5 15.4c1.6 2 2.4 3.3 2.4 4.2a2.4 2.4 0 0 1-4.8 0c0-.9.8-2.2 2.4-4.2z'/%3E%3C/svg%3E") 9 17, cell;
+    }
+    .xq-shell:fullscreen {
+      height: 100vh;
+      min-height: 100vh;
+      background: #edf1f5;
+    }
+    .xq-shell.is-fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      min-height: 100vh;
+      background: #edf1f5;
+    }
+    .xq-shell:fullscreen .xq-canvas-wrap {
+      min-height: calc(100vh - 142px);
+    }
+    .xq-shell.is-fullscreen .xq-canvas-wrap {
+      min-height: calc(100vh - 142px);
+    }
+    @media (max-width: 860px) {
+      .xq-appbar {
+        grid-template-columns: 1fr;
+      }
+      .xq-workbench {
+        grid-template-columns: 1fr;
+      }
+      .xq-panel {
+        border-right: 0;
+        border-bottom: 1px solid #d1d8e0;
+        max-height: 48vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="xqShell" class="xq-shell">
+    <div class="xq-appbar">
+      <div class="xq-brand">XquendArt Lienzo</div>
+      <div class="xq-ribbon">
+        <button id="drawToolButton" class="xq-tool-button is-active" type="button" title="Dibujar con texto">Pincel</button>
+        <button id="fillButton" class="xq-tool-button" type="button" title="Rellenar el área donde hagas clic">Rellenar</button>
+        <button id="undoButton" class="xq-icon-button" type="button">↶</button>
+        <button id="redoButton" class="xq-icon-button" type="button">↷</button>
+        <button id="clearButton" class="xq-tool-button" type="button">Limpiar</button>
+        <button id="downloadButton" class="xq-tool-button xq-primary" type="button">PNG</button>
+        <button id="downloadSvgButton" class="xq-tool-button" type="button">SVG</button>
+        <button id="saveStateButton" class="xq-tool-button" type="button" title="Guardar el lienzo como JSON editable">Guardar JSON</button>
+        <button id="loadStateButton" class="xq-tool-button" type="button" title="Abrir un JSON guardado de XquendArt">Abrir JSON</button>
+        <input id="loadStateInput" type="file" accept="application/json,.json" hidden />
+      </div>
+      <button id="fullscreenButton" class="xq-tool-button" type="button">Pantalla completa</button>
+    </div>
+
+    <div class="xq-workbench">
+      <aside class="xq-panel">
+        <details class="xq-panel-section" open>
+          <summary class="xq-panel-title">Textos</summary>
+          <div id="textSlotButtons" class="xq-text-slots"></div>
+          <div class="xq-control">
+            <label for="sourceSelect"><span>Texto activo</span><span id="activeTextLabel">1</span></label>
+            <select id="sourceSelect"></select>
+          </div>
+          <textarea id="activeTextEditor" spellcheck="false"></textarea>
+          <div class="xq-checks">
+            <label><input id="loopText" type="checkbox" checked /> Repetir texto</label>
+          </div>
+        </details>
+
+        <details class="xq-panel-section" open>
+          <summary class="xq-panel-title">Color</summary>
+          <div id="colorPalette" class="xq-color-palette"></div>
+          <div class="xq-control">
+            <label for="textColor"><span>Color texto</span></label>
+            <input id="textColor" type="color" value="#000000" />
+          </div>
+        </details>
+
+        <details class="xq-panel-section" open>
+          <summary class="xq-panel-title">Pincel</summary>
+          <div class="xq-compact-grid">
+            <div class="xq-control">
+              <label for="unitSelect"><span>Pincel</span></label>
+              <select id="unitSelect">
+                <option value="chars">Caracteres</option>
+                <option value="words">Palabras</option>
+              </select>
+            </div>
+            <div class="xq-control">
+              <label for="sizeMode"><span>Tamaño</span></label>
+              <select id="sizeMode">
+                <option value="manual">Manual</option>
+                <option value="speed" selected>Velocidad</option>
+              </select>
+            </div>
+            <div class="xq-control">
+              <label for="fontMin"><span>Min</span></label>
+              <input id="fontMin" type="number" min="4" max="240" value="10" />
+            </div>
+            <div class="xq-control">
+              <label for="fontMax"><span>Max</span></label>
+              <input id="fontMax" type="number" min="4" max="260" value="70" />
+            </div>
+          </div>
+          <div class="xq-control">
+            <label for="fontSize"><span>Tamaño manual</span><span id="fontSizeLabel">28 px</span></label>
+            <input id="fontSize" type="range" min="4" max="180" value="28" />
+          </div>
+          <div class="xq-control">
+            <label for="speedSensitivity"><span>Sensibilidad</span><span id="speedSensitivityLabel">1.0x</span></label>
+            <input id="speedSensitivity" type="range" min="0.2" max="2.5" step="0.05" value="1" />
+          </div>
+          <div class="xq-control">
+            <label for="spacing"><span>Espaciado</span><span id="spacingLabel">4 px</span></label>
+            <input id="spacing" type="range" min="0" max="80" value="4" />
+          </div>
+          <div class="xq-control">
+            <label for="spacingMode"><span>Espacio dinámico</span></label>
+            <select id="spacingMode">
+              <option value="manual">No</option>
+              <option value="speed">Velocidad</option>
+            </select>
+          </div>
+          <div class="xq-checks">
+            <label><input id="invertSpeedSize" type="checkbox" /> Invertir velocidad/tamaño</label>
+            <label><input id="keepTextUpright" type="checkbox" checked /> Mantener texto legible</label>
+          </div>
+        </details>
+
+        <details class="xq-panel-section" open>
+          <summary class="xq-panel-title">Relleno</summary>
+          <div class="xq-control">
+            <label for="fillOrientation"><span>Orientación</span></label>
+            <select id="fillOrientation">
+              <option value="horizontal">Horizontal</option>
+              <option value="vertical">Vertical</option>
+            </select>
+          </div>
+          <div class="xq-control">
+            <label for="fillDirection"><span>Sentido</span></label>
+            <select id="fillDirection">
+              <option value="forward">Normal</option>
+              <option value="reverse">Invertido</option>
+            </select>
+          </div>
+          <div class="xq-control">
+            <label for="fillTolerance"><span>Cerrar brechas</span><span id="fillToleranceLabel">1.20x</span></label>
+            <input id="fillTolerance" type="range" min="0.7" max="2.4" step="0.05" value="1.2" />
+          </div>
+        </details>
+
+        <details class="xq-panel-section" open>
+          <summary class="xq-panel-title">Fondo</summary>
+          <div class="xq-compact-grid">
+            <div class="xq-control">
+              <label for="bgColor"><span>Color</span></label>
+              <input id="bgColor" type="color" value="#ffffff" />
+            </div>
+            <button id="clearBgImageButton" type="button">Quitar imagen</button>
+          </div>
+          <div class="xq-control">
+            <label for="bgImageInput"><span>Imagen</span><span id="bgImageLabel">Sin imagen</span></label>
+            <input id="bgImageInput" type="file" accept="image/*" />
+          </div>
+          <div class="xq-control">
+            <label for="bgImageMode"><span>Ajuste</span></label>
+            <select id="bgImageMode">
+              <option value="fit">Ajustar</option>
+              <option value="fill">Rellenar</option>
+              <option value="stretch">Estirar</option>
+              <option value="original">Original</option>
+              <option value="tile">Mosaico</option>
+            </select>
+          </div>
+          <div class="xq-control">
+            <label for="bgImageOpacity"><span>Opacidad</span><span id="bgImageOpacityLabel">100%</span></label>
+            <input id="bgImageOpacity" type="range" min="0" max="100" value="100" />
+          </div>
+          <div class="xq-checks">
+            <label><input id="transparentBg" type="checkbox" /> Fondo transparente</label>
+          </div>
+        </details>
+      </aside>
+
+      <main class="xq-stage">
+        <div class="xq-stagebar">
+          <span id="status" class="xq-status"></span>
+          <div class="xq-zoom-controls">
+            <button id="zoomOutButton" type="button">−</button>
+            <span id="zoomLabel">100%</span>
+            <button id="zoomInButton" type="button">+</button>
+            <button id="zoomResetButton" type="button">1:1</button>
+          </div>
+        </div>
+        <div id="canvasWrap" class="xq-canvas-wrap">
+          <div id="canvasInner" class="xq-canvas-inner">
+            <canvas id="wordCanvas" tabindex="0" aria-label="Lienzo XquendArt"></canvas>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = __XQUENDART_CONFIG__;
+    if (CONFIG.font && CONFIG.font.data) {
+      const style = document.createElement("style");
+      style.textContent = `@font-face {
+        font-family: "${CONFIG.font.family}";
+        src: url(data:font/ttf;base64,${CONFIG.font.data}) format("truetype");
+      }`;
+      document.head.appendChild(style);
+    }
+
+    const canvas = document.getElementById("wordCanvas");
+    const ctx = canvas.getContext("2d");
+    const canvasWrap = document.getElementById("canvasWrap");
+    const canvasInner = document.getElementById("canvasInner");
+    const sourceSelect = document.getElementById("sourceSelect");
+    const unitSelect = document.getElementById("unitSelect");
+    const sizeMode = document.getElementById("sizeMode");
+    const speedSensitivity = document.getElementById("speedSensitivity");
+    const speedSensitivityLabel = document.getElementById("speedSensitivityLabel");
+    const fontSize = document.getElementById("fontSize");
+    const fontSizeLabel = document.getElementById("fontSizeLabel");
+    const fontMin = document.getElementById("fontMin");
+    const fontMax = document.getElementById("fontMax");
+    const spacing = document.getElementById("spacing");
+    const spacingLabel = document.getElementById("spacingLabel");
+    const spacingMode = document.getElementById("spacingMode");
+    const textColor = document.getElementById("textColor");
+    const colorPalette = document.getElementById("colorPalette");
+    const bgColor = document.getElementById("bgColor");
+    const bgImageInput = document.getElementById("bgImageInput");
+    const bgImageLabel = document.getElementById("bgImageLabel");
+    const bgImageMode = document.getElementById("bgImageMode");
+    const bgImageOpacity = document.getElementById("bgImageOpacity");
+    const bgImageOpacityLabel = document.getElementById("bgImageOpacityLabel");
+    const loopText = document.getElementById("loopText");
+    const transparentBg = document.getElementById("transparentBg");
+    const invertSpeedSize = document.getElementById("invertSpeedSize");
+    const keepTextUpright = document.getElementById("keepTextUpright");
+    const status = document.getElementById("status");
+    const shell = document.getElementById("xqShell");
+    const textSlotButtons = document.getElementById("textSlotButtons");
+    const activeTextLabel = document.getElementById("activeTextLabel");
+    const activeTextEditor = document.getElementById("activeTextEditor");
+    const drawToolButton = document.getElementById("drawToolButton");
+    const fillButton = document.getElementById("fillButton");
+    const fillOrientation = document.getElementById("fillOrientation");
+    const fillDirection = document.getElementById("fillDirection");
+    const fillTolerance = document.getElementById("fillTolerance");
+    const fillToleranceLabel = document.getElementById("fillToleranceLabel");
+    const redoButton = document.getElementById("redoButton");
+    const fullscreenButton = document.getElementById("fullscreenButton");
+    const zoomOutButton = document.getElementById("zoomOutButton");
+    const zoomInButton = document.getElementById("zoomInButton");
+    const zoomResetButton = document.getElementById("zoomResetButton");
+    const zoomLabel = document.getElementById("zoomLabel");
+
+    canvas.width = CONFIG.width;
+    canvas.height = CONFIG.height;
+
+    const fontFamily = CONFIG.font && CONFIG.font.stack
+      ? CONFIG.font.stack
+      : '"Noto Sans", "Noto Sans CJK JP", "Noto Sans CJK KR", "Noto Sans CJK SC", Arial, sans-serif';
+
+    const state = {
+      drawing: false,
+      cursor: { x: 0, y: 0 },
+      pointer: { cssX: 0, cssY: 0 },
+      lastTime: 0,
+      smoothedSpeed: 0,
+      lastSpeedPxSec: 0,
+      lastRenderedSize: Number(fontSize.value) || 28,
+      textIndex: 0,
+      tokens: [],
+      strokes: [],
+      strokePaths: [],
+      redoStrokes: [],
+      redoPaths: [],
+      currentStroke: null,
+      currentPath: null,
+      zoom: 1,
+      activeTool: "draw",
+      localSources: []
+    };
+    const backgroundImage = {
+      dataUrl: "",
+      name: "",
+      ready: false,
+      image: new Image()
+    };
+    const paletteColors = [
+      "#000000", "#ffffff", "#c1121f", "#f77f00",
+      "#fcbf49", "#2a9d8f", "#1d4ed8", "#7a2ead",
+      "#6d6875", "#8ac926", "#ff66a1", "#4a4e69",
+      "#7f5539", "#118ab2", "#06d6a0", "#ef476f"
+    ];
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function populateSources() {
+      state.localSources = CONFIG.textSources.slice(0, 10).map((source, index) => ({
+        label: source.label || `Texto ${index + 1}`,
+        text: source.text || ""
+      }));
+      while (state.localSources.length < 10) {
+        state.localSources.push({
+          label: `Texto ${state.localSources.length + 1}`,
+          text: ""
+        });
+      }
+      sourceSelect.innerHTML = "";
+      textSlotButtons.innerHTML = "";
+      state.localSources.forEach((source, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = source.label;
+        sourceSelect.appendChild(option);
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "xq-slot-button";
+        button.dataset.sourceIndex = String(index);
+        button.title = source.label;
+        button.textContent = String(index + 1);
+        button.addEventListener("click", () => {
+          sourceSelect.value = String(index);
+          rebuildTokens(false);
+        });
+        textSlotButtons.appendChild(button);
+      });
+      rebuildTokens(false);
+    }
+
+    function currentText() {
+      const source = state.localSources[Number(sourceSelect.value)] || state.localSources[0];
+      return source ? source.text : "";
+    }
+
+    function updateTextSlotState() {
+      const active = Number(sourceSelect.value) || 0;
+      activeTextLabel.textContent = String(active + 1);
+      if (document.activeElement !== activeTextEditor) {
+        activeTextEditor.value = currentText();
+      }
+      [...textSlotButtons.querySelectorAll("button")].forEach((button) => {
+        button.classList.toggle("is-active", Number(button.dataset.sourceIndex) === active);
+      });
+    }
+
+    function tokenizeWordsPreservingSpaces(text) {
+      return text.replace(/[\r\n\t]+/g, " ").match(/^\s+|\S+\s*/g) || [];
+    }
+
+    function rebuildTokens(resetIndex = true) {
+      const text = currentText().replace(/[\r\n\t]+/g, " ");
+      if (unitSelect.value === "words") {
+        state.tokens = tokenizeWordsPreservingSpaces(text).filter((token) => token.length > 0);
+      } else {
+        state.tokens = Array.from(text);
+      }
+      if (!state.tokens.some((token) => !/^\s+$/.test(token))) {
+        state.tokens = ["XquendArt"];
+      }
+      if (resetIndex) {
+        state.textIndex = 0;
+      }
+      updateTextSlotState();
+      updateStatus();
+    }
+
+    function nextToken() {
+      if (!loopText.checked && state.textIndex >= state.tokens.length) {
+        return "";
+      }
+      const token = state.tokens[state.textIndex % state.tokens.length];
+      state.textIndex += 1;
+      return token;
+    }
+
+    function setFont(size) {
+      ctx.font = `${size}px ${fontFamily}`;
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "left";
+    }
+
+    function cssScale() {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: rect.width / Math.max(canvas.width, 1),
+        y: rect.height / Math.max(canvas.height, 1)
+      };
+    }
+
+    function pointerCssDistance(point) {
+      const scale = cssScale();
+      const previousCssX = Number.isFinite(state.pointer.cssX)
+        ? state.pointer.cssX
+        : state.cursor.x * scale.x;
+      const previousCssY = Number.isFinite(state.pointer.cssY)
+        ? state.pointer.cssY
+        : state.cursor.y * scale.y;
+      const currentCssX = Number.isFinite(point.cssX)
+        ? point.cssX
+        : point.x * scale.x;
+      const currentCssY = Number.isFinite(point.cssY)
+        ? point.cssY
+        : point.y * scale.y;
+      return Math.hypot(currentCssX - previousCssX, currentCssY - previousCssY);
+    }
+
+    function updateMotionSpeed(cssDistance, dt) {
+      const elapsed = clamp(dt, 8, 120);
+      const pxPerSec = (cssDistance / elapsed) * 1000;
+      const sensitivity = Number(speedSensitivity.value) || 1;
+      const slowPxSec = 45;
+      const fastPxSec = 2200 / sensitivity;
+      const normalized = clamp((pxPerSec - slowPxSec) / Math.max(1, fastPxSec - slowPxSec), 0, 1);
+      state.lastSpeedPxSec = pxPerSec;
+      state.smoothedSpeed = state.smoothedSpeed * 0.3 + normalized * 0.7;
+      return state.smoothedSpeed;
+    }
+
+    function speedFontSize(speedT) {
+      const minSize = Number(fontMin.value) || 10;
+      const maxSize = Math.max(minSize, Number(fontMax.value) || 70);
+      if (sizeMode.value === "manual") {
+        state.lastRenderedSize = Number(fontSize.value) || 28;
+        return state.lastRenderedSize;
+      }
+      const eased = Math.pow(clamp(speedT, 0, 1), 1.15);
+      const nextSize = invertSpeedSize.checked
+        ? maxSize - (maxSize - minSize) * eased
+        : minSize + (maxSize - minSize) * eased;
+      state.lastRenderedSize = nextSize;
+      return nextSize;
+    }
+
+    function spacingSize(speedT) {
+      const base = Number(spacing.value) || 0;
+      if (spacingMode.value !== "speed") {
+        return base;
+      }
+      const t = Math.pow(clamp(speedT, 0, 1), 1.1);
+      return base + t * 36;
+    }
+
+    function displayAngleFor(pathAngle) {
+      if (!keepTextUpright.checked) {
+        return pathAngle;
+      }
+      let angle = pathAngle;
+      while (angle <= -Math.PI) angle += Math.PI * 2;
+      while (angle > Math.PI) angle -= Math.PI * 2;
+      if (angle > Math.PI / 2 || angle < -Math.PI / 2) {
+        angle += Math.PI;
+      }
+      return angle;
+    }
+
+    function markAngle(mark) {
+      if (mark.fixedAngle) {
+        return Number(mark.angle ?? mark.pathAngle ?? 0);
+      }
+      return displayAngleFor(Number(mark.pathAngle ?? mark.angle ?? 0));
+    }
+
+    function setColor(color) {
+      textColor.value = color;
+      [...colorPalette.querySelectorAll("button")].forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.color.toLowerCase() === color.toLowerCase());
+      });
+      updateStatus();
+    }
+
+    function populatePalette() {
+      colorPalette.innerHTML = "";
+      paletteColors.forEach((color) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "xq-swatch";
+        button.dataset.color = color;
+        button.title = color;
+        button.style.background = color;
+        button.addEventListener("click", () => setColor(color));
+        colorPalette.appendChild(button);
+      });
+      setColor(textColor.value);
+    }
+
+    function clearRedo() {
+      state.redoStrokes = [];
+      state.redoPaths = [];
+    }
+
+    function undo() {
+      if (!state.strokes.length) {
+        return;
+      }
+      state.redoStrokes.push(state.strokes.pop());
+      state.redoPaths.push(state.strokePaths.pop() || []);
+      redraw();
+    }
+
+    function redo() {
+      if (!state.redoStrokes.length) {
+        return;
+      }
+      state.strokes.push(state.redoStrokes.pop());
+      state.strokePaths.push(state.redoPaths.pop() || []);
+      redraw();
+    }
+
+    function applyZoom(nextZoom) {
+      const previousWidth = Math.max(canvasWrap.scrollWidth, 1);
+      const previousHeight = Math.max(canvasWrap.scrollHeight, 1);
+      const centerX = (canvasWrap.scrollLeft + canvasWrap.clientWidth / 2) / previousWidth;
+      const centerY = (canvasWrap.scrollTop + canvasWrap.clientHeight / 2) / previousHeight;
+      state.zoom = clamp(nextZoom, 0.25, 4);
+      const cssWidth = canvas.width * state.zoom;
+      const cssHeight = canvas.height * state.zoom;
+      canvas.style.width = `${cssWidth}px`;
+      canvas.style.height = `${cssHeight}px`;
+      canvasInner.style.width = `${cssWidth}px`;
+      canvasInner.style.height = `${cssHeight}px`;
+      zoomLabel.textContent = `${Math.round(state.zoom * 100)}%`;
+      requestAnimationFrame(() => {
+        canvasWrap.scrollLeft = Math.max(0, centerX * canvasWrap.scrollWidth - canvasWrap.clientWidth / 2);
+        canvasWrap.scrollTop = Math.max(0, centerY * canvasWrap.scrollHeight - canvasWrap.clientHeight / 2);
+      });
+    }
+
+    function fitZoomToView() {
+      const availableWidth = Math.max(260, canvasWrap.clientWidth - 36);
+      const availableHeight = Math.max(260, canvasWrap.clientHeight - 36);
+      return clamp(Math.min(1, availableWidth / canvas.width, availableHeight / canvas.height), 0.25, 1);
+    }
+
+    function pointInPolygon(point, polygon) {
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x;
+        const yi = polygon[i].y;
+        const xj = polygon[j].x;
+        const yj = polygon[j].y;
+        const intersects = ((yi > point.y) !== (yj > point.y)) &&
+          (point.x < (xj - xi) * (point.y - yi) / ((yj - yi) || 0.00001) + xi);
+        if (intersects) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function polygonArea(path) {
+      let area = 0;
+      for (let i = 0, j = path.length - 1; i < path.length; j = i++) {
+        area += (path[j].x + path[i].x) * (path[j].y - path[i].y);
+      }
+      return Math.abs(area / 2);
+    }
+
+    function pointSegmentDistance(point, a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lenSq = dx * dx + dy * dy || 1;
+      const t = clamp(((point.x - a.x) * dx + (point.y - a.y) * dy) / lenSq, 0, 1);
+      const x = a.x + dx * t;
+      const y = a.y + dy * t;
+      return Math.hypot(point.x - x, point.y - y);
+    }
+
+    function distanceToPath(point, path) {
+      let min = Infinity;
+      for (let i = 0; i < path.length; i += 1) {
+        const a = path[i];
+        const b = path[(i + 1) % path.length];
+        min = Math.min(min, pointSegmentDistance(point, a, b));
+      }
+      return min;
+    }
+
+    function drawableBarrierPath(path, index) {
+      return Array.isArray(path) &&
+        path.length >= 2 &&
+        Array.isArray(state.strokes[index]) &&
+        state.strokes[index].length > 0;
+    }
+
+    function hasDrawableBarriers() {
+      return state.strokePaths.some((path, index) => drawableBarrierPath(path, index));
+    }
+
+    function pathBarrierWidth(index, scale) {
+      const marks = state.strokes[index] || [];
+      const maxMarkSize = marks.reduce((max, mark) => Math.max(max, Number(mark.size) || 0), 0);
+      const base = maxMarkSize || Number(fontSize.value) || 28;
+      const tolerance = Number(fillTolerance.value) || 1.2;
+      return Math.max(4, Math.min(140 * scale, base * 1.12 * tolerance * scale));
+    }
+
+    function drawBarrierPath(maskCtx, path, index, scale) {
+      const width = pathBarrierWidth(index, scale);
+      const first = path[0];
+      const last = path[path.length - 1];
+      maskCtx.save();
+      maskCtx.strokeStyle = "#000";
+      maskCtx.fillStyle = "#000";
+      maskCtx.lineWidth = width;
+      maskCtx.lineCap = "round";
+      maskCtx.lineJoin = "round";
+      maskCtx.beginPath();
+      maskCtx.moveTo(first.x * scale, first.y * scale);
+      path.slice(1).forEach((point) => maskCtx.lineTo(point.x * scale, point.y * scale));
+      const closingDistance = Math.hypot(last.x - first.x, last.y - first.y) * scale;
+      if (closingDistance <= Math.max(width * 1.65, 14 * scale)) {
+        maskCtx.closePath();
+      }
+      maskCtx.stroke();
+
+      const endpointRadius = Math.max(width * 0.55, 5);
+      [first, last].forEach((point) => {
+        maskCtx.beginPath();
+        maskCtx.arc(point.x * scale, point.y * scale, endpointRadius, 0, Math.PI * 2);
+        maskCtx.fill();
+      });
+      maskCtx.restore();
+    }
+
+    function renderBarrierMask() {
+      const maxSide = 1100;
+      const scale = clamp(maxSide / Math.max(canvas.width, canvas.height), 0.25, 1);
+      const gridW = Math.max(1, Math.ceil(canvas.width * scale));
+      const gridH = Math.max(1, Math.ceil(canvas.height * scale));
+      const maskCanvas = document.createElement("canvas");
+      maskCanvas.width = gridW;
+      maskCanvas.height = gridH;
+      const maskCtx = maskCanvas.getContext("2d");
+      state.strokePaths.forEach((path, index) => {
+        if (drawableBarrierPath(path, index)) {
+          drawBarrierPath(maskCtx, path, index, scale);
+        }
+      });
+      const data = maskCtx.getImageData(0, 0, gridW, gridH).data;
+      const blocked = new Uint8Array(gridW * gridH);
+      for (let i = 0; i < blocked.length; i += 1) {
+        blocked[i] = data[i * 4 + 3] > 10 ? 1 : 0;
+      }
+      return { blocked, gridW, gridH, scale };
+    }
+
+    function gridIndex(x, y, gridW) {
+      return y * gridW + x;
+    }
+
+    function pointToGrid(point, region) {
+      return {
+        x: clamp(Math.floor(point.x * region.scale), 0, region.gridW - 1),
+        y: clamp(Math.floor(point.y * region.scale), 0, region.gridH - 1)
+      };
+    }
+
+    function findOpenSeed(region, seed) {
+      const startIndex = gridIndex(seed.x, seed.y, region.gridW);
+      if (!region.blocked[startIndex]) {
+        return seed;
+      }
+      const radiusLimit = Math.max(4, Math.ceil((Number(fontSize.value) || 28) * region.scale));
+      for (let radius = 1; radius <= radiusLimit; radius += 1) {
+        for (let dy = -radius; dy <= radius; dy += 1) {
+          for (let dx = -radius; dx <= radius; dx += 1) {
+            if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) {
+              continue;
+            }
+            const x = seed.x + dx;
+            const y = seed.y + dy;
+            if (x < 0 || y < 0 || x >= region.gridW || y >= region.gridH) {
+              continue;
+            }
+            if (!region.blocked[gridIndex(x, y, region.gridW)]) {
+              return { x, y };
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function floodRegionFromPoint(point) {
+      const region = renderBarrierMask();
+      const seed = findOpenSeed(region, pointToGrid(point, region));
+      if (!seed) {
+        return null;
+      }
+      const total = region.gridW * region.gridH;
+      const visited = new Uint8Array(total);
+      const queue = new Int32Array(total);
+      let head = 0;
+      let tail = 0;
+      let count = 0;
+      let minGX = seed.x;
+      let maxGX = seed.x;
+      let minGY = seed.y;
+      let maxGY = seed.y;
+      const seedIndex = gridIndex(seed.x, seed.y, region.gridW);
+      visited[seedIndex] = 1;
+      queue[tail] = seedIndex;
+      tail += 1;
+
+      while (head < tail) {
+        const index = queue[head];
+        head += 1;
+        const x = index % region.gridW;
+        const y = Math.floor(index / region.gridW);
+        count += 1;
+        minGX = Math.min(minGX, x);
+        maxGX = Math.max(maxGX, x);
+        minGY = Math.min(minGY, y);
+        maxGY = Math.max(maxGY, y);
+
+        const neighbors = [
+          x > 0 ? index - 1 : -1,
+          x < region.gridW - 1 ? index + 1 : -1,
+          y > 0 ? index - region.gridW : -1,
+          y < region.gridH - 1 ? index + region.gridW : -1
+        ];
+        neighbors.forEach((next) => {
+          if (next >= 0 && !visited[next] && !region.blocked[next]) {
+            visited[next] = 1;
+            queue[tail] = next;
+            tail += 1;
+          }
+        });
+      }
+
+      return {
+        ...region,
+        visited,
+        count,
+        total,
+        minGX,
+        maxGX,
+        minGY,
+        maxGY
+      };
+    }
+
+    function regionTouchesMaskEdge(region) {
+      return region.minGX <= 1 ||
+        region.minGY <= 1 ||
+        region.maxGX >= region.gridW - 2 ||
+        region.maxGY >= region.gridH - 2;
+    }
+
+    function regionCellAt(region, x, y) {
+      if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) {
+        return -1;
+      }
+      const gx = clamp(Math.floor(x * region.scale), 0, region.gridW - 1);
+      const gy = clamp(Math.floor(y * region.scale), 0, region.gridH - 1);
+      return gridIndex(gx, gy, region.gridW);
+    }
+
+    function isSafeRegionPoint(region, x, y, marginCells) {
+      const margin = Math.max(0, marginCells || 0);
+      const scaledX = x * region.scale;
+      const scaledY = y * region.scale;
+      const offsets = margin > 0
+        ? [[0, 0], [margin, 0], [-margin, 0], [0, margin], [0, -margin], [margin, margin], [-margin, margin], [margin, -margin], [-margin, -margin]]
+        : [[0, 0]];
+      return offsets.every(([dx, dy]) => {
+        const gx = Math.floor(scaledX + dx);
+        const gy = Math.floor(scaledY + dy);
+        if (gx < 0 || gy < 0 || gx >= region.gridW || gy >= region.gridH) {
+          return false;
+        }
+        const index = gridIndex(gx, gy, region.gridW);
+        return Boolean(region.visited[index]) && !region.blocked[index];
+      });
+    }
+
+    function textFitsRegion(region, x, y, width, size, angle) {
+      const marginCells = Math.max(1, Math.ceil(Math.min(18, size * 0.24 * region.scale)));
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const normalX = Math.cos(angle + Math.PI / 2);
+      const normalY = Math.sin(angle + Math.PI / 2);
+      const segments = Math.max(2, Math.ceil(width / Math.max(size * 1.4, 24)));
+      const lateral = [-size * 0.36, 0, size * 0.36];
+      for (let i = 0; i <= segments; i += 1) {
+        const forward = (width * i) / segments;
+        for (const side of lateral) {
+          const sampleX = x + cos * forward + normalX * side;
+          const sampleY = y + sin * forward + normalY * side;
+          if (!isSafeRegionPoint(region, sampleX, sampleY, marginCells)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function peekFillToken() {
+      if (!loopText.checked && state.textIndex >= state.tokens.length) {
+        return "";
+      }
+      return state.tokens[state.textIndex % state.tokens.length] || "";
+    }
+
+    function addFillMark(fillStroke, x, y, angle, token, size) {
+      fillStroke.push({
+        x,
+        y,
+        angle,
+        pathAngle: angle,
+        text: token,
+        size,
+        color: textColor.value,
+        fixedAngle: true
+      });
+      state.textIndex += 1;
+    }
+
+    function buildHorizontalFill(region, size) {
+      const fillStroke = [];
+      const gap = Math.max(2, Number(spacing.value) || 0);
+      const rowStep = Math.max(8, size * 1.35 + gap);
+      const scanStep = Math.max(4, size * 0.34);
+      const reverse = fillDirection.value === "reverse";
+      const angle = reverse ? Math.PI : 0;
+      const minX = region.minGX / region.scale;
+      const maxX = Math.min(canvas.width, (region.maxGX + 1) / region.scale);
+      const minY = region.minGY / region.scale;
+      const maxY = Math.min(canvas.height, (region.maxGY + 1) / region.scale);
+      const margin = Math.max(6, size * 0.65);
+      const yStart = reverse ? maxY - margin : minY + margin;
+      const yEnd = reverse ? minY + margin : maxY - margin;
+      const yStep = reverse ? -rowStep : rowStep;
+
+      for (let y = yStart; reverse ? y >= yEnd : y <= yEnd; y += yStep) {
+        let x = reverse ? maxX - margin : minX + margin;
+        let guard = 0;
+        while ((reverse ? x >= minX + margin : x <= maxX - margin) && guard < 1400) {
+          const token = peekFillToken();
+          if (!token) {
+            return fillStroke;
+          }
+          const width = measureToken(token, size);
+          if (textFitsRegion(region, x, y, width, size, angle)) {
+            addFillMark(fillStroke, x, y, angle, token, size);
+            x += reverse ? -(width + gap) : width + gap;
+          } else {
+            x += reverse ? -scanStep : scanStep;
+          }
+          guard += 1;
+        }
+      }
+      return fillStroke;
+    }
+
+    function buildVerticalFill(region, size) {
+      const fillStroke = [];
+      const gap = Math.max(2, Number(spacing.value) || 0);
+      const columnStep = Math.max(8, size * 1.35 + gap);
+      const scanStep = Math.max(4, size * 0.34);
+      const minX = region.minGX / region.scale;
+      const maxX = Math.min(canvas.width, (region.maxGX + 1) / region.scale);
+      const minY = region.minGY / region.scale;
+      const maxY = Math.min(canvas.height, (region.maxGY + 1) / region.scale);
+      const margin = Math.max(6, size * 0.65);
+      const reverse = fillDirection.value === "reverse";
+      const angle = reverse ? Math.PI / 2 : -Math.PI / 2;
+      const xStart = reverse ? maxX - margin : minX + margin;
+      const xEnd = reverse ? minX + margin : maxX - margin;
+      const xStep = reverse ? -columnStep : columnStep;
+
+      for (let x = xStart; reverse ? x >= xEnd : x <= xEnd; x += xStep) {
+        let y = reverse ? minY + margin : maxY - margin;
+        let guard = 0;
+        while ((reverse ? y <= maxY - margin : y >= minY + margin) && guard < 1400) {
+          const token = peekFillToken();
+          if (!token) {
+            return fillStroke;
+          }
+          const width = measureToken(token, size);
+          if (textFitsRegion(region, x, y, width, size, angle)) {
+            addFillMark(fillStroke, x, y, angle, token, size);
+            y += reverse ? width + gap : -(width + gap);
+          } else {
+            y += reverse ? scanStep : -scanStep;
+          }
+          guard += 1;
+        }
+      }
+      return fillStroke;
+    }
+
+    function fillAtPoint(point) {
+      const region = floodRegionFromPoint(point);
+      if (!region) {
+        alert("Haz clic dentro de un área libre para rellenarla.");
+        return;
+      }
+      if (hasDrawableBarriers() && regionTouchesMaskEdge(region) && region.count / region.total > 0.18) {
+        alert("Esa zona parece abierta. Cierra un poco más el contorno o sube 'Cerrar brechas'.");
+        return;
+      }
+      const size = clamp(Number(fontSize.value) || 28, 4, 180);
+      state.lastRenderedSize = size;
+      const fillStroke = fillOrientation.value === "vertical"
+        ? buildVerticalFill(region, size)
+        : buildHorizontalFill(region, size);
+
+      if (!fillStroke.length) {
+        alert("No encontré espacio suficiente para rellenar esa región con el tamaño actual.");
+        return;
+      }
+      state.strokes.push(fillStroke);
+      state.strokePaths.push([]);
+      clearRedo();
+      redraw();
+    }
+
+    function getBackgroundPlacement() {
+      if (!backgroundImage.ready || !backgroundImage.image.naturalWidth || !backgroundImage.image.naturalHeight) {
+        return null;
+      }
+      const img = backgroundImage.image;
+      const mode = bgImageMode.value;
+      if (mode === "stretch") {
+        return { x: 0, y: 0, width: canvas.width, height: canvas.height };
+      }
+      if (mode === "original" || mode === "tile") {
+        return {
+          x: (canvas.width - img.naturalWidth) / 2,
+          y: (canvas.height - img.naturalHeight) / 2,
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        };
+      }
+      const scale = mode === "fill"
+        ? Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight)
+        : Math.min(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+      const width = img.naturalWidth * scale;
+      const height = img.naturalHeight * scale;
+      return {
+        x: (canvas.width - width) / 2,
+        y: (canvas.height - height) / 2,
+        width,
+        height
+      };
+    }
+
+    function drawBackgroundImage() {
+      if (!backgroundImage.ready) {
+        return;
+      }
+      ctx.save();
+      ctx.globalAlpha = clamp(Number(bgImageOpacity.value) / 100, 0, 1);
+      if (bgImageMode.value === "tile") {
+        const pattern = ctx.createPattern(backgroundImage.image, "repeat");
+        if (pattern) {
+          ctx.fillStyle = pattern;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      } else {
+        const placement = getBackgroundPlacement();
+        if (placement) {
+          ctx.drawImage(backgroundImage.image, placement.x, placement.y, placement.width, placement.height);
+        }
+      }
+      ctx.restore();
+    }
+
+    function measureToken(token, size) {
+      if (/^\s+$/.test(token)) {
+        return Math.max(1, token.length * size * 0.55);
+      }
+      setFont(size);
+      return Math.max(1, ctx.measureText(token).width);
+    }
+
+    function drawBackground() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!transparentBg.checked) {
+        ctx.fillStyle = bgColor.value;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      drawBackgroundImage();
+    }
+
+    function drawMark(mark) {
+      if (!mark.text || /^\s+$/.test(mark.text)) {
+        return;
+      }
+      ctx.save();
+      ctx.translate(mark.x, mark.y);
+      ctx.rotate(markAngle(mark));
+      ctx.fillStyle = mark.color;
+      setFont(mark.size);
+      ctx.fillText(mark.text, 0, 0);
+      ctx.restore();
+    }
+
+    function redraw() {
+      drawBackground();
+      state.strokes.forEach((stroke) => stroke.forEach(drawMark));
+      updateStatus();
+    }
+
+    function getPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      const cssX = event.clientX - rect.left;
+      const cssY = event.clientY - rect.top;
+      return {
+        x: cssX * (canvas.width / rect.width),
+        y: cssY * (canvas.height / rect.height),
+        cssX,
+        cssY
+      };
+    }
+
+    function processPoint(point) {
+      const now = performance.now();
+      if (state.currentPath) {
+        state.currentPath.push({ x: point.x, y: point.y });
+      }
+      let dx = point.x - state.cursor.x;
+      let dy = point.y - state.cursor.y;
+      let distance = Math.hypot(dx, dy);
+      const dt = now - state.lastTime;
+      const speedT = updateMotionSpeed(pointerCssDistance(point), dt);
+      let guard = 0;
+
+      while (distance > 0.5 && guard < 120) {
+        const size = speedFontSize(speedT);
+        const gap = spacingSize(speedT);
+        const token = nextToken();
+        if (!token) {
+          break;
+        }
+        const step = measureToken(token, size) + gap;
+        if (distance < step) {
+          state.textIndex -= 1;
+          break;
+        }
+
+        const pathAngle = Math.atan2(dy, dx);
+        const mark = {
+          x: state.cursor.x,
+          y: state.cursor.y,
+          angle: displayAngleFor(pathAngle),
+          pathAngle,
+          text: token,
+          size,
+          color: textColor.value
+        };
+
+        state.currentStroke.push(mark);
+        drawMark(mark);
+
+        state.cursor = {
+          x: state.cursor.x + Math.cos(pathAngle) * step,
+          y: state.cursor.y + Math.sin(pathAngle) * step
+        };
+
+        dx = point.x - state.cursor.x;
+        dy = point.y - state.cursor.y;
+        distance = Math.hypot(dx, dy);
+        guard += 1;
+      }
+
+      state.lastTime = now;
+      state.pointer = {
+        cssX: Number.isFinite(point.cssX) ? point.cssX : state.cursor.x * cssScale().x,
+        cssY: Number.isFinite(point.cssY) ? point.cssY : state.cursor.y * cssScale().y
+      };
+      updateStatus();
+    }
+
+    function startDrawing(event) {
+      event.preventDefault();
+      focusCanvas();
+      if (state.activeTool === "fill") {
+        fillAtPoint(getPoint(event));
+        return;
+      }
+      canvas.setPointerCapture(event.pointerId);
+      state.drawing = true;
+      state.cursor = getPoint(event);
+      state.pointer = { cssX: state.cursor.cssX, cssY: state.cursor.cssY };
+      state.lastTime = performance.now();
+      state.smoothedSpeed = 0;
+      state.lastSpeedPxSec = 0;
+      state.currentStroke = [];
+      state.currentPath = [{ x: state.cursor.x, y: state.cursor.y }];
+      state.strokes.push(state.currentStroke);
+      state.strokePaths.push(state.currentPath);
+      clearRedo();
+    }
+
+    function moveDrawing(event) {
+      if (!state.drawing) {
+        return;
+      }
+      event.preventDefault();
+      processPoint(getPoint(event));
+    }
+
+    function stopDrawing(event) {
+      if (!state.drawing) {
+        return;
+      }
+      event.preventDefault();
+      state.drawing = false;
+      if (state.currentStroke && state.currentStroke.length === 0) {
+        state.strokes.pop();
+        state.strokePaths.pop();
+      }
+      state.currentStroke = null;
+      state.currentPath = null;
+      updateStatus();
+    }
+
+    function simulateStroke(points) {
+      if (!Array.isArray(points) || points.length < 2) {
+        return;
+      }
+      state.drawing = true;
+      state.cursor = points[0];
+      const scale = cssScale();
+      state.pointer = {
+        cssX: Number.isFinite(points[0].cssX) ? points[0].cssX : points[0].x * scale.x,
+        cssY: Number.isFinite(points[0].cssY) ? points[0].cssY : points[0].y * scale.y
+      };
+      state.lastTime = performance.now();
+      state.smoothedSpeed = 0;
+      state.lastSpeedPxSec = 0;
+      state.currentStroke = [];
+      state.currentPath = [{ x: points[0].x, y: points[0].y }];
+      state.strokes.push(state.currentStroke);
+      state.strokePaths.push(state.currentPath);
+      clearRedo();
+      points.slice(1).forEach((point) => processPoint(point));
+      state.drawing = false;
+      if (state.currentStroke && state.currentStroke.length === 0) {
+        state.strokes.pop();
+        state.strokePaths.pop();
+      }
+      state.currentStroke = null;
+      state.currentPath = null;
+      updateStatus();
+    }
+
+    function updateStatus() {
+      const marks = state.strokes.reduce((sum, stroke) => sum + stroke.length, 0);
+      const speedPercent = Math.round(state.smoothedSpeed * 100);
+      const speedPxSec = Math.round(state.lastSpeedPxSec || 0);
+      const bgInfo = backgroundImage.ready ? ` Fondo: ${backgroundImage.name}.` : "";
+      status.textContent = `${state.strokes.length} trazo(s), ${marks} marca(s), ${state.tokens.length} unidad(es) de texto. Velocidad: ${speedPercent}% (${speedPxSec} px/s).${bgInfo}`;
+      fontSizeLabel.textContent = sizeMode.value === "speed"
+        ? `${Math.round(state.lastRenderedSize)} px`
+        : `${fontSize.value} px`;
+      spacingLabel.textContent = spacingMode.value === "speed"
+        ? `${spacing.value}+vel`
+        : `${spacing.value} px`;
+      speedSensitivityLabel.textContent = `${Number(speedSensitivity.value).toFixed(2)}x`;
+      fillToleranceLabel.textContent = `${Number(fillTolerance.value).toFixed(2)}x`;
+      bgImageOpacityLabel.textContent = `${bgImageOpacity.value}%`;
+      bgImageLabel.textContent = backgroundImage.ready ? "Cargada" : "Sin imagen";
+    }
+
+    function downloadBlob(filename, content, type) {
+      const blob = content instanceof Blob ? content : new Blob([content], { type });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    function downloadPng() {
+      redraw();
+      const link = document.createElement("a");
+      link.download = "xquendart_lienzo.png";
+      link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function escapeXml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    }
+
+    function svgBackgroundImage() {
+      if (!backgroundImage.ready) {
+        return { defs: "", body: "" };
+      }
+      const opacity = clamp(Number(bgImageOpacity.value) / 100, 0, 1).toFixed(2);
+      const href = escapeXml(backgroundImage.dataUrl);
+      if (bgImageMode.value === "tile") {
+        const width = backgroundImage.image.naturalWidth || canvas.width;
+        const height = backgroundImage.image.naturalHeight || canvas.height;
+        return {
+          defs: `<defs><pattern id="xq-bg-pattern" patternUnits="userSpaceOnUse" width="${width}" height="${height}"><image href="${href}" width="${width}" height="${height}" /></pattern></defs>\n`,
+          body: `  <rect x="0" y="0" width="${canvas.width}" height="${canvas.height}" fill="url(#xq-bg-pattern)" opacity="${opacity}" />\n`
+        };
+      }
+      const placement = getBackgroundPlacement();
+      if (!placement) {
+        return { defs: "", body: "" };
+      }
+      return {
+        defs: "",
+        body: `  <image href="${href}" x="${placement.x.toFixed(2)}" y="${placement.y.toFixed(2)}" width="${placement.width.toFixed(2)}" height="${placement.height.toFixed(2)}" preserveAspectRatio="none" opacity="${opacity}" />\n`
+      };
+    }
+
+    function svgFontDefs() {
+      if (!CONFIG.font || !CONFIG.font.data || !CONFIG.font.family) {
+        return "";
+      }
+      return `<defs><style type="text/css"><![CDATA[\n` +
+        `@font-face { font-family: "${CONFIG.font.family}"; src: url(data:font/ttf;base64,${CONFIG.font.data}) format("truetype"); }\n` +
+        `]]></style></defs>\n`;
+    }
+
+    function svgFontFamilyAttr() {
+      const family = CONFIG.font && CONFIG.font.stack
+        ? CONFIG.font.stack
+        : "Noto Sans, Arial, sans-serif";
+      return escapeXml(family);
+    }
+
+    function downloadSvg() {
+      const marks = state.strokes.flat().filter((mark) => mark.text && !/\s/.test(mark.text));
+      const background = transparentBg.checked
+        ? ""
+        : `  <rect x="0" y="0" width="${canvas.width}" height="${canvas.height}" fill="${bgColor.value}" />\n`;
+      const bgImageSvg = svgBackgroundImage();
+      const textElements = marks.map((mark) => {
+        const angle = markAngle(mark) * 180 / Math.PI;
+        return `  <text x="${mark.x.toFixed(2)}" y="${mark.y.toFixed(2)}" ` +
+          `font-size="${mark.size.toFixed(2)}" fill="${mark.color}" ` +
+          `font-family="${svgFontFamilyAttr()}" ` +
+          `text-anchor="start" dominant-baseline="middle" ` +
+          `transform="rotate(${angle.toFixed(2)} ${mark.x.toFixed(2)} ${mark.y.toFixed(2)})">` +
+          `${escapeXml(mark.text)}</text>`;
+      }).join("\n");
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">\n` +
+        bgImageSvg.defs +
+        svgFontDefs() +
+        background +
+        bgImageSvg.body +
+        textElements +
+        "\n</svg>\n";
+      downloadBlob("xquendart_lienzo.svg", svg, "image/svg+xml;charset=utf-8");
+    }
+
+    function setBackgroundImage(dataUrl, name) {
+      backgroundImage.dataUrl = dataUrl || "";
+      backgroundImage.name = name || "";
+      backgroundImage.ready = false;
+      backgroundImage.image = new Image();
+      if (!dataUrl) {
+        bgImageInput.value = "";
+        updateStatus();
+        redraw();
+        return;
+      }
+      backgroundImage.image.onload = () => {
+        backgroundImage.ready = true;
+        updateStatus();
+        redraw();
+      };
+      backgroundImage.image.onerror = () => {
+        backgroundImage.dataUrl = "";
+        backgroundImage.name = "";
+        backgroundImage.ready = false;
+        updateStatus();
+        alert("No se pudo cargar la imagen de fondo.");
+      };
+      backgroundImage.image.src = dataUrl;
+    }
+
+    function exportState() {
+      return {
+        version: 1,
+        canvas: { width: canvas.width, height: canvas.height },
+        controls: {
+          sourceIndex: Number(sourceSelect.value) || 0,
+          unit: unitSelect.value,
+          sizeMode: sizeMode.value,
+          speedSensitivity: speedSensitivity.value,
+          fontSize: fontSize.value,
+          fontMin: fontMin.value,
+          fontMax: fontMax.value,
+          spacing: spacing.value,
+          spacingMode: spacingMode.value,
+          textColor: textColor.value,
+          bgColor: bgColor.value,
+          loopText: loopText.checked,
+          transparentBg: transparentBg.checked,
+          invertSpeedSize: invertSpeedSize.checked,
+          keepTextUpright: keepTextUpright.checked,
+          fillOrientation: fillOrientation.value,
+          fillDirection: fillDirection.value,
+          fillTolerance: fillTolerance.value,
+          bgImageMode: bgImageMode.value,
+          bgImageOpacity: bgImageOpacity.value
+        },
+        textIndex: state.textIndex,
+        textSources: state.localSources,
+        strokes: state.strokes,
+        strokePaths: state.strokePaths,
+        zoom: state.zoom,
+        backgroundImage: backgroundImage.ready
+          ? { name: backgroundImage.name, dataUrl: backgroundImage.dataUrl }
+          : null
+      };
+    }
+
+    function setSelectValue(select, value) {
+      if ([...select.options].some((option) => option.value === value)) {
+        select.value = value;
+      }
+    }
+
+    function restoreState(saved) {
+      if (!saved || !Array.isArray(saved.strokes)) {
+        alert("El archivo de estado no parece ser de XquendArt.");
+        return;
+      }
+      const controls = saved.controls || {};
+      const savedCanvas = saved.canvas || {};
+      const scaleX = canvas.width / (savedCanvas.width || canvas.width);
+      const scaleY = canvas.height / (savedCanvas.height || canvas.height);
+      const scaleSize = Math.sqrt(scaleX * scaleY);
+      setSelectValue(sourceSelect, String(controls.sourceIndex ?? sourceSelect.value));
+      setSelectValue(unitSelect, controls.unit || unitSelect.value);
+      setSelectValue(sizeMode, controls.sizeMode || sizeMode.value);
+      setSelectValue(spacingMode, controls.spacingMode || spacingMode.value);
+      setSelectValue(fillOrientation, controls.fillOrientation || fillOrientation.value);
+      setSelectValue(fillDirection, controls.fillDirection || fillDirection.value);
+      setSelectValue(bgImageMode, controls.bgImageMode || bgImageMode.value);
+      if (Array.isArray(saved.textSources) && saved.textSources.length) {
+        state.localSources = saved.textSources.slice(0, 10).map((source, index) => ({
+          label: source.label || `Texto ${index + 1}`,
+          text: source.text || ""
+        }));
+        while (state.localSources.length < 10) {
+          state.localSources.push({ label: `Texto ${state.localSources.length + 1}`, text: "" });
+        }
+        sourceSelect.innerHTML = "";
+        state.localSources.forEach((source, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          option.textContent = source.label;
+          sourceSelect.appendChild(option);
+        });
+        setSelectValue(sourceSelect, String(controls.sourceIndex ?? 0));
+        [...textSlotButtons.querySelectorAll("button")].forEach((button) => {
+          const index = Number(button.dataset.sourceIndex);
+          if (state.localSources[index]) {
+            button.title = state.localSources[index].label;
+          }
+        });
+      }
+      speedSensitivity.value = controls.speedSensitivity ?? speedSensitivity.value;
+      fontSize.value = controls.fontSize ?? fontSize.value;
+      fontMin.value = controls.fontMin ?? fontMin.value;
+      fontMax.value = controls.fontMax ?? fontMax.value;
+      spacing.value = controls.spacing ?? spacing.value;
+      fillTolerance.value = controls.fillTolerance ?? fillTolerance.value;
+      textColor.value = controls.textColor || textColor.value;
+      bgColor.value = controls.bgColor || bgColor.value;
+      loopText.checked = controls.loopText ?? loopText.checked;
+      transparentBg.checked = controls.transparentBg ?? transparentBg.checked;
+      invertSpeedSize.checked = controls.invertSpeedSize ?? invertSpeedSize.checked;
+      keepTextUpright.checked = controls.keepTextUpright ?? keepTextUpright.checked;
+      bgImageOpacity.value = controls.bgImageOpacity ?? bgImageOpacity.value;
+      rebuildTokens();
+      state.textIndex = saved.textIndex || 0;
+      state.strokes = saved.strokes.map((stroke) => {
+        if (!Array.isArray(stroke)) {
+          return [];
+        }
+        return stroke.map((mark) => ({
+          x: Number(mark.x || 0) * scaleX,
+          y: Number(mark.y || 0) * scaleY,
+          angle: Number(mark.angle ?? mark.pathAngle ?? 0),
+          pathAngle: Number(mark.pathAngle ?? mark.angle ?? 0),
+          text: String(mark.text || ""),
+          size: Number(mark.size || fontSize.value || 28) * scaleSize,
+          color: mark.color || textColor.value,
+          fixedAngle: Boolean(mark.fixedAngle)
+        }));
+      }).filter((stroke) => stroke.length);
+      state.strokePaths = Array.isArray(saved.strokePaths)
+        ? saved.strokePaths.map((path) => Array.isArray(path)
+          ? path.map((point) => ({
+            x: Number(point.x || 0) * scaleX,
+            y: Number(point.y || 0) * scaleY
+          }))
+          : [])
+        : state.strokes.map((stroke) => stroke.map((mark) => ({ x: mark.x, y: mark.y })));
+      state.redoStrokes = [];
+      state.redoPaths = [];
+      state.currentStroke = null;
+      state.currentPath = null;
+      state.drawing = false;
+      applyZoom(Number(saved.zoom || 1));
+      if (saved.backgroundImage && saved.backgroundImage.dataUrl) {
+        setBackgroundImage(saved.backgroundImage.dataUrl, saved.backgroundImage.name || "Imagen");
+      } else {
+        setBackgroundImage("", "");
+      }
+      redraw();
+    }
+
+    function focusCanvas() {
+      requestAnimationFrame(() => {
+        if (document.activeElement !== canvas) {
+          canvas.focus({ preventScroll: true });
+        }
+      });
+    }
+
+    function setActiveTool(tool, shouldFocus = true) {
+      state.activeTool = tool === "fill" ? "fill" : "draw";
+      shell.dataset.tool = state.activeTool;
+      fillButton.classList.toggle("is-active", state.activeTool === "fill");
+      drawToolButton.classList.toggle("is-active", state.activeTool === "draw");
+      if (shouldFocus) {
+        focusCanvas();
+      }
+    }
+
+    document.getElementById("undoButton").addEventListener("click", undo);
+    redoButton.addEventListener("click", redo);
+    fillButton.addEventListener("click", () => setActiveTool("fill"));
+    drawToolButton.addEventListener("click", () => setActiveTool("draw"));
+    document.getElementById("clearButton").addEventListener("click", () => {
+      state.strokes = [];
+      state.strokePaths = [];
+      state.redoStrokes = [];
+      state.redoPaths = [];
+      state.currentStroke = null;
+      state.currentPath = null;
+      state.textIndex = 0;
+      redraw();
+    });
+    document.getElementById("downloadButton").addEventListener("click", downloadPng);
+    document.getElementById("downloadSvgButton").addEventListener("click", downloadSvg);
+    document.getElementById("clearBgImageButton").addEventListener("click", () => setBackgroundImage("", ""));
+    fullscreenButton.addEventListener("click", async () => {
+      if (document.fullscreenEnabled && !document.fullscreenElement) {
+        await shell.requestFullscreen().catch(() => shell.classList.add("is-fullscreen"));
+      } else if (document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+      } else {
+        shell.classList.toggle("is-fullscreen");
+      }
+    });
+    zoomOutButton.addEventListener("click", () => applyZoom(state.zoom / 1.2));
+    zoomInButton.addEventListener("click", () => applyZoom(state.zoom * 1.2));
+    zoomResetButton.addEventListener("click", () => applyZoom(1));
+    document.getElementById("saveStateButton").addEventListener("click", () => {
+      downloadBlob(
+        "xquendart_lienzo_estado.json",
+        JSON.stringify(exportState(), null, 2),
+        "application/json;charset=utf-8"
+      );
+    });
+    document.getElementById("loadStateButton").addEventListener("click", () => {
+      document.getElementById("loadStateInput").click();
+    });
+    document.getElementById("loadStateInput").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          restoreState(JSON.parse(String(reader.result || "{}")));
+        } catch (error) {
+          alert("No se pudo leer el estado JSON.");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    });
+
+    canvas.addEventListener("pointerdown", startDrawing);
+    canvas.addEventListener("pointermove", moveDrawing);
+    canvas.addEventListener("pointerup", stopDrawing);
+    canvas.addEventListener("pointercancel", stopDrawing);
+    canvas.addEventListener("pointerleave", stopDrawing);
+    function handleKeyboardShortcut(event) {
+      if (event.xquendartHandled) {
+        return;
+      }
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+      const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+      if (tag === "textarea" || tag === "input" || tag === "select" || event.target?.isContentEditable) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "z" && event.shiftKey) {
+        event.xquendartHandled = true;
+        event.preventDefault();
+        redo();
+      } else if (key === "z") {
+        event.xquendartHandled = true;
+        event.preventDefault();
+        undo();
+      } else if (key === "y") {
+        event.xquendartHandled = true;
+        event.preventDefault();
+        redo();
+      } else if (key === "0") {
+        event.xquendartHandled = true;
+        event.preventDefault();
+        applyZoom(1);
+      } else if (key === "=" || key === "+") {
+        event.xquendartHandled = true;
+        event.preventDefault();
+        applyZoom(state.zoom * 1.2);
+      } else if (key === "-") {
+        event.xquendartHandled = true;
+        event.preventDefault();
+        applyZoom(state.zoom / 1.2);
+      }
+    }
+    window.addEventListener("keydown", handleKeyboardShortcut, true);
+    document.addEventListener("keydown", handleKeyboardShortcut, true);
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "xquendart:simulateStroke") {
+        return;
+      }
+      simulateStroke(event.data.points);
+    });
+
+    sourceSelect.addEventListener("change", () => rebuildTokens(false));
+    activeTextEditor.addEventListener("input", () => {
+      const active = Number(sourceSelect.value) || 0;
+      if (state.localSources[active]) {
+        state.localSources[active].text = activeTextEditor.value;
+        rebuildTokens(false);
+      }
+    });
+    unitSelect.addEventListener("change", rebuildTokens);
+    textColor.addEventListener("input", () => setColor(textColor.value));
+    [fontSize, fontMin, fontMax, spacing, speedSensitivity, fillTolerance, bgImageOpacity].forEach((input) => {
+      input.addEventListener("input", updateStatus);
+    });
+    [sizeMode, spacingMode, fillOrientation, fillDirection, loopText].forEach((input) => {
+      input.addEventListener("change", updateStatus);
+    });
+    [bgColor, transparentBg, bgImageMode, bgImageOpacity, keepTextUpright].forEach((input) => {
+      input.addEventListener("input", redraw);
+      input.addEventListener("change", redraw);
+    });
+    bgImageInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => setBackgroundImage(String(reader.result || ""), file.name || "Imagen");
+      reader.readAsDataURL(file);
+    });
+
+    setActiveTool("draw", false);
+    populatePalette();
+    applyZoom(fitZoomToView());
+    populateSources();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(redraw);
+    } else {
+      redraw();
+    }
+  </script>
+</body>
+</html>

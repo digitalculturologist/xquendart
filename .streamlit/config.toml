@@ -1,0 +1,17 @@
+[server]
+# Desactiva la protección XSRF — necesario detrás del proxy de HF Spaces
+enableXsrfProtection = false
+
+# Desactiva las restricciones CORS — necesario para que el frontend
+# de Streamlit se comunique con el backend a través del proxy
+enableCORS = false
+
+# Tamaño máximo de archivo en MB (las fotos de celulares modernos
+# pueden pesar 10-20 MB fácilmente)
+maxUploadSize = 50
+
+[browser]
+# Evita que Streamlit intente abrir un navegador al iniciar
+# (irrelevante en HF Spaces, pero buena práctica)
+serverAddress = "0.0.0.0"
+gatherUsageStats = false

@@ -6,6 +6,9 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
+    fonts-noto \
+    fonts-noto-cjk \
+    fonts-noto-color-emoji \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
